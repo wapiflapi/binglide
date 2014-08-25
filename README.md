@@ -11,7 +11,7 @@ The view is a trimensional represention of trigrams.
 
 binwalk looking at binwalk/gui.py, showing ascii data.
 The view is a twodimensional represention of bigrams.
-![binwalk looking at binwalk/gui.py](http://i.imgur.com/yFbLstf.png)
+![binwalk looking at binwalk/gui.py](http://i.imgur.com/nuz103P.png)
 
 
 binwalk looking at emacs23-nox.
@@ -32,7 +32,7 @@ that isn't imediatly recognizable, but does contain a lot of text.
 
    Comming soon.
 
-## Instalation
+## Installation
 
    Detailed instructions comming soon, but install the requirements then:
 
