@@ -11,7 +11,7 @@ try:
     from numba import jit
 except ImportError:
     print("numba is not available! Entropy calculation will be *slow*.")
-    jit = lambda *a: lambda f: f
+    jit = lambda *a, **k: lambda f: f
 
 from binglide.utils import *
 
