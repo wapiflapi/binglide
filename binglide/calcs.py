@@ -123,8 +123,8 @@ class ngrams(identity):
             v = nb_pos * (1 - ((nb_pos-1) / nb_pos) ** blocksize)
             s = nb_blocks * v
 
-            print("%.2f blocks: %.2f*%d(%d) = %d." % (
-                    nb_blocks, nb_blocks, blocksize, v, nb_blocks * v))
+            # print("%.2f blocks: %.2f*%d(%d) = %d." % (
+            #         nb_blocks, nb_blocks, blocksize, v, nb_blocks * v))
 
             if s <= limit and (maxbs is None or abs(optim - blocksize) < abs(optim - maxbs)):
                 maxbs = blocksize
