@@ -100,6 +100,7 @@ class BinglideUI(QtGui.QMainWindow):
     def read_file(self, f):
         self.data = np.fromstring(f.read(), dtype='uint8')
         self.update_data()
+        self.view_all()
 
     def open_file(self):
         fname = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
