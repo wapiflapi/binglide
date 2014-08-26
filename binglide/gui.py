@@ -83,6 +83,15 @@ class BinglideUI(QtGui.QMainWindow):
     def live_region(self, checked):
         self.scale1.live_region = checked
         self.scale2.live_region = checked
+        self.levels.setTracking(checked)
+
+    def change_levels(self, value):
+
+        value = value / 50
+
+        self.view2D.setlvl(value)
+        self.view3D.setlvl(value)
+        self.do_update()
 
     def view_all(self):
         self.scale1.region_full()
@@ -169,6 +178,12 @@ class BinglideUI(QtGui.QMainWindow):
         spacer.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         toolbar.addWidget(spacer)
 
+        self.levels = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.levels.setRange(0, 100)
+        self.levels.setValue(50)
+        self.levels.setTracking(False)
+        self.levels.valueChanged.connect(self.change_levels)
+        toolbar.addWidget(self.levels)
 
         liveRegion = QtGui.QAction('live', self)
         liveRegion.setShortcut('l')

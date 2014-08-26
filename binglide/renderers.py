@@ -114,6 +114,8 @@ class Renderer(object):
 
         self.needs_region = region
 
+        self.lvls = 1.0
+
     def forward(self, other):
         self.forwards.append(other)
 
@@ -218,8 +220,15 @@ class Renderer(object):
         self.do_render(self.projected)
 
 
+    def rescale(self, projected):
+        print(self.lvls)
+        return np.minimum(projected.astype(int) * self.lvls, 255)
+
     def setup_region(self):
         self.region = None
+
+    def setlvl(self, lvl):
+        self.lvls = lvl
 
     def region_update(self):
         if not self.forwards:
@@ -304,7 +313,9 @@ class Renderer2D(pg.GraphicsLayoutWidget, Renderer):
         return w, h
 
     def do_render(self, projected):
-        self.img.setImage(projected, levels=None)
+        projected = self.rescale(projected)
+
+        self.img.setImage(projected)
 
         for _ in (1, 2): # No idea why but need to do this twice.
             self.view.setRange(xRange=(0, self.projected.shape[0]),
@@ -333,6 +344,8 @@ class Renderer3D(gl.GLViewWidget, Renderer):
         return 256, 256, 256
 
     def do_render(self, projected):
+        projected = self.rescale(projected)
+
         x, y, z, _ = projected.shape
         print(x, y, z)
         d = float(max(x, y, z) * 2)
