@@ -206,7 +206,7 @@ class BinglideUI(QtGui.QMainWindow):
 
         exitAction = QtGui.QAction('Exit', self)
         exitAction.setShortcut('Ctrl+Q')
-        exitAction.triggered.connect(QtGui.qApp.quit)
+        exitAction.triggered.connect(self.close)
 
         self.addToolBar(toolbar)
 
