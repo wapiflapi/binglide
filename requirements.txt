@@ -1,4 +1,3 @@
-PyQt4
 pyqtgraph
 numpy
 numba
