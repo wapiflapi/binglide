@@ -179,7 +179,7 @@ class BinglideUI(QtGui.QMainWindow):
         toolbar.addWidget(spacer)
 
         self.levels = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self.levels.setRange(0, 100)
+        self.levels.setRange(0, 400)
         self.levels.setValue(50)
         self.levels.setTracking(False)
         self.levels.valueChanged.connect(self.change_levels)
