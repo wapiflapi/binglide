@@ -1,9 +1,9 @@
-binwalk
+binglide
 =======
 
-binwalk is a visual reverse engineering tool. It is designed to offer a quick overview of the different data types that are present in a file. The screenshot bellow shows a small portion of the php5 binary that has a weird signature pattern:
+binglide is a visual reverse engineering tool. It is designed to offer a quick overview of the different data types that are present in a file. The screenshot bellow shows a small portion of the php5 binary that has a weird signature pattern:
 
-![binwalk looking at php5](http://i.imgur.com/O6HMfSn.png)
+![binglide looking at php5](http://i.imgur.com/O6HMfSn.png)
 
 ## Requirements
 
@@ -53,7 +53,7 @@ This representation ofers very visual patterns that are diferent enough from one
 A data point in one of those views represents how often those bytes are found together. Data in pink is simply the printable ascii range.
 
 For example this is a 2D representation of the histogram of bigrams in english text:
-![binwalk looking at english text](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/text_2g.png)
+![binglide looking at english text](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/text_2g.png)
 
 Notice the square representing the lowercase ascii letters that follow each other. Slightly to the left we see some traces of uppercase followed by lowercase and beneath that another, more subtle, square representing all caps words. The rest is mainly characters followed by spaces or other punctuation.
 
@@ -65,9 +65,9 @@ You can find screenshots of some common data types under the /samples/ directory
 
 Bytecode patterns are usualy very similar even when looking at different architectures. This mean code in an unknown architecture might be recognized as code and at the same time with practise one can identify the architecture. Bellow is i386, x86_64 and powerpc in that order.
 
-![binwalk looking at i386](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf32-i386_2g_code.png)
-![binwalk looking at x86_64](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf64-x86-64_2g_code.png)
-![binwalk looking at powerpc](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf64-big-powerpc_2g_code.png)
+![binglide looking at i386](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf32-i386_2g_code.png)
+![binglide looking at x86_64](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf64-x86-64_2g_code.png)
+![binglide looking at powerpc](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf64-big-powerpc_2g_code.png)
 
 ### images & sound
 
@@ -75,29 +75,29 @@ When looking at uncompressed images or sound the patterns are pretty similar. It
 
 #### Sound
 
-![binwalk looking at human speech](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/speech_8b.wav_2g.png)
+![binglide looking at human speech](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/speech_8b.wav_2g.png)
 This is human speech, notice the very small range of values that are used.
 
-![binwalk looking at rock music](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/music_8b.wav_2g.png)
+![binglide looking at rock music](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/music_8b.wav_2g.png)
 For reference this is rock music.
 
-![binwalk looking at human speech](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/speech_16b.wav_3g.png)
+![binglide looking at human speech](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/speech_16b.wav_3g.png)
 This is the same speech encoded on 16bit. Each high-order byte will be very close to 0xff or 0x00 because of the small amount of values that are actualy used. Each being a signed uint16 close to 0. This is why this pattern emerges.
 
 #### Images
 
 Images have the same diagonal shape but are _much_ more organic.
 
-![binwalk looking at an image](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/rgb_24b.bmp_3g.png)
-![binwalk looking at an image](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/rgb2_24b.bmp_3g.png)
+![binglide looking at an image](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/rgb_24b.bmp_3g.png)
+![binglide looking at an image](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/rgb2_24b.bmp_3g.png)
 
 ### Compressed data
 
 Compressed data almost looks like random data, which is expected. But some patterns can still be recognized.
 
-![binwalk looking at gzip](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/gzip_2g.png)
+![binglide looking at gzip](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/gzip_2g.png)
 The screenshot above shows gzip's deflate compression. Notice the lines going diagonaly through the image.
 
-![binwalk looking at gif](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/gif_2g.png)
-![binwalk looking at jpeg](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/jpeg_2g.png)
+![binglide looking at gif](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/gif_2g.png)
+![binglide looking at jpeg](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/jpeg_2g.png)
 Those two images show gif and jpeg respectively.
