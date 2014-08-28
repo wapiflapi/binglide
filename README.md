@@ -50,8 +50,9 @@ This are the most useful views when it comes to identifying what kind of data on
 
 This representation ofers very visual patterns that are diferent enough from one data type to another to be easily recognized once you get used to them.
 
-A data point in one of those views represents how often those bytes are found together. For example this is a 2D representation of the histogram of bigrams in english text:
+A data point in one of those views represents how often those bytes are found together. Data in pink is simply the printable ascii range.
 
+For example this is a 2D representation of the histogram of bigrams in english text:
 ![binwalk looking at english text](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/text_2g.png)
 
 Notice the square representing the lowercase ascii letters that follow each other. Slightly to the left we see some traces of uppercase followed by lowercase and beneath that another, more subtle, square representing all caps words. The rest is mainly characters followed by spaces or other punctuation.
@@ -59,3 +60,44 @@ Notice the square representing the lowercase ascii letters that follow each othe
 ## Sample data types
 
 You can find screenshots of some common data types under the /samples/ directory.
+
+### bytecode
+
+Bytecode patterns are usualy very similar even when looking at different architectures. This mean code in an unknown architecture might be recognized as code and at the same time with practise one can identify the architecture. Bellow is i386, x86_64 and powerpc in that order.
+
+![binwalk looking at i386](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf32-i386_2g_code.png)
+![binwalk looking at x86_64](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf64-x86-64_2g_code.png)
+![binwalk looking at powerpc](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf64-big-powerpc_2g_code.png)
+
+### images & sound
+
+When looking at uncompressed images or sound the patterns are pretty similar. It is mainly a diagonal with some "organic" features, this is because the data doesnt change much from one point in the file to the next. One thing to notice is the number of channels the data is encoded with. Especially in 3D you can notice 3 distinct features when an image is encoded in RGB, these are the RGB, GBR and BRG trigrams. Another caveat is the presence of an (almost) unused channel, this happens with unused alpha channels, or sound encoded on 16bit but with the original data coming from an 8 bit source for example. In those cases one of the channels will almost never change thus projecting the whole histogram on a couple of planes in the 3D view. Here are some samples:
+
+#### Sound
+
+![binwalk looking at human speech](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/speech_8b.wav_2g.png)
+This is human speech, notice the very small range of values that are used.
+
+![binwalk looking at rock music](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/music_8b.wav_2g.png)
+For reference this is rock music.
+
+![binwalk looking at human speech](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/speech_16b.wav_3g.png)
+This is the same speech encoded on 16bit. Each high-order byte will be very close to 0xff or 0x00 because of the small amount of values that are actualy used. Each being a signed uint16 close to 0. This is why this pattern emerges.
+
+#### Images
+
+Images have the same diagonal shape but are _much_ more organic.
+
+![binwalk looking at an image](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/rgb_24b.bmp_3g.png)
+![binwalk looking at an image](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/rgb2_24b.bmp_3g.png)
+
+### Compressed data
+
+Compressed data almost looks like random data, which is expected. But some patterns can still be recognized.
+
+![binwalk looking at gzip](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/gzip_2g.png)
+The screenshot above shows gzip's deflate compression. Notice the lines going diagonaly through the image.
+
+![binwalk looking at gif](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/gif_2g.png)
+![binwalk looking at jpeg](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/jpeg_2g.png)
+Those two images show gif and jpeg respectively.
