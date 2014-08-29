@@ -5,6 +5,8 @@ binglide is a visual reverse engineering tool. It is designed to offer a quick o
 
 ![binglide looking at php5](http://i.imgur.com/O6HMfSn.png)
 
+This tool does not know about any particular file format, everything is done using the same analysis working on the data. This means it works even if headers are missing or corrupted or if the file format is unknown.
+
 ## Requirements
 
    * PyQt4
