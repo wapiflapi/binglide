@@ -18,21 +18,32 @@ This tool does not know about any particular file format, everything is done usi
 ## Installation
 
 binglide uses python3, be careful to install packages for that version of python.
-
-This guide is for Linux distributions using the apt packet-manager, it shouldn't be hard to extrapolate what you need for other distributions We just need to get all the requirements working and then setup binglide using setup.py.
-
 The basic libraries used by binglide are numpy and pyqtgraph. pyqtgraph needs pyqt4 and pyqt4.opengl, these can't be installed through pip as far as I know.
+However without the JIT optimisations this will be quite slow, for this the numba library is used. https://github.com/numba/numba (install instructions not included here!)
+
+If there are problems with those instructions please report them on the issue. I can't test all distros.
+
+### Ubuntu
+
+This is tested on Ubuntu but might work for similar distributions. It shouldn't be hard to extrapolate what you need for other distributions. We just need to get all the requirements working and then setup binglide using setup.py.
 
 ```
-apt-get install python3-pyqt4 python3-pyqt4.qtopengl
-pip3 install pyqtgraph numpy
-
-# In the root of the git directory:
-python3 setup.py intall
+git clone https://github.com/wapiflapi/binglide
+sudo apt-get install python3-pyqt4 python3-pyqt4.qtopengl
+sudo pip3 install pyqtgraph numpy
+cd ./binglide && \
+sudo python3 setup.py intall
 ```
 
-However without the JIT optimisations this will be quite slow, for this the numba library is used. https://github.com/numba/numba
+### Fedora
 
+```
+git clone https://github.com/wapiflapi/binglide
+sudo yum -y install python3-pip python3-PyQt4 python3-PyOpenGL python3-numpy python3-scipy
+sudo pip-python3 install pyqtgraph
+cd ./binglide && \
+sudo python3 setup.py install
+```
 
 ## Documentation
 
