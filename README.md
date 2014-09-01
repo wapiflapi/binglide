@@ -32,7 +32,7 @@ git clone https://github.com/wapiflapi/binglide
 sudo apt-get install python3-pyqt4 python3-pyqt4.qtopengl python3-opengl
 sudo pip3 install pyqtgraph numpy
 cd ./binglide && \
-sudo python3 setup.py intall
+sudo python3 setup.py install
 ```
 
 ### Fedora
