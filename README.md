@@ -7,6 +7,8 @@ binglide is a visual reverse engineering tool. It is designed to offer a quick o
 
 This tool does not know about any particular file format, everything is done using the same analysis working on the data. This means it works even if headers are missing or corrupted or if the file format is unknown.
 
+This first version of binglide was part of a project for my M.Sc. in the School of Computing of the University of Kent, in Canterbury, UK. I'd like to thank [Dr. Julio Hernandez Castro](http://www.azlaha.com/) for introducing me to the field of Visual Reverse Engineering and for his feedback on my work. I'm planning on doing a second version with more features and rich user interface so if you have any requests feel free to create an issue for that.
+
 ## Requirements
 
    * PyQt4
@@ -45,9 +47,18 @@ cd ./binglide && \
 sudo python3 setup.py install
 ```
 
-## Documentation
+## Acknowledgments
 
-binglide has been developed in order to better understand some of the algoritms used by [Cantor dust](https://sites.google.com/site/xxcantorxdustxx/).
+Binglide was developed in order to better understand the algorithms that have been used in other projects, here is a non-exclusive list of projects and people this was inspired by.
+
+- [Cantor Dust](https://sites.google.com/site/xxcantorxdustxx/) hasn't been released but the glimpses we got to see from the project at various conferences greatly inspired the GUI of binglide and its beauty is something to strive for.
+- [binvis](https://code.google.com/p/binvis/) one of the currently available tools that presents the most visualizations and whose authors have greatly contributed to the field.
+- [binwalk](http://binwalk.org/) a standard tool for reverse engineers its focus is not visualization but it still is an inspiration.
+
+- [Aldo Cortesi](http://corte.si/) does awesome work on visualizations and his work on Hilbert curves will be featured in the next versions of binglide.
+
+
+## Documentation
 
 ### GUI Layout
 The main windows is split in three zones, the two on the left allow for selection of the part of the file that is being studied. The bigger pane on the right shows the results of the selected algorithm.
@@ -61,7 +72,7 @@ This uses a sliding window over the data to compute "local" Shannon entropy. The
 ### N-Gram visualisation (3G, 2G)
 This are the most useful views when it comes to identifying what kind of data one is looking at. The idea is to look at a histogram of bigrams or trigrams in the file. Those are represented in 2D or 3D.
 
-This representation ofers very visual patterns that are diferent enough from one data type to another to be easily recognized once you get used to them.
+This representation offers very visual patterns that are different enough from one data type to another to be easily recognized once you get used to them.
 
 A data point in one of those views represents how often those bytes are found together. Data in pink is simply the printable ascii range.
 
@@ -76,7 +87,7 @@ You can find screenshots of some common data types under the /samples/ directory
 
 ### bytecode
 
-Bytecode patterns are usualy very similar even when looking at different architectures. This mean code in an unknown architecture might be recognized as code and at the same time with practise one can identify the architecture. Bellow is i386, x86_64 and powerpc in that order.
+Bytecode patterns are usually very similar even when looking at different architectures. This mean code in an unknown architecture might be recognized as code and at the same time with practice one can identify the architecture. Bellow is i386, x86_64 and powerpc in that order.
 
 ![binglide looking at i386](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf32-i386_2g_code.png)
 ![binglide looking at x86_64](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/elf64-x86-64_2g_code.png)
@@ -84,7 +95,7 @@ Bytecode patterns are usualy very similar even when looking at different archite
 
 ### images & sound
 
-When looking at uncompressed images or sound the patterns are pretty similar. It is mainly a diagonal with some "organic" features, this is because the data doesnt change much from one point in the file to the next. One thing to notice is the number of channels the data is encoded with. Especially in 3D you can notice 3 distinct features when an image is encoded in RGB, these are the RGB, GBR and BRG trigrams. Another caveat is the presence of an (almost) unused channel, this happens with unused alpha channels, or sound encoded on 16bit but with the original data coming from an 8 bit source for example. In those cases one of the channels will almost never change thus projecting the whole histogram on a couple of planes in the 3D view. Here are some samples:
+When looking at uncompressed images or sound the patterns are pretty similar. It is mainly a diagonal with some "organic" features, this is because the data doesn't change much from one point in the file to the next. One thing to notice is the number of channels the data is encoded with. Especially in 3D you can notice 3 distinct features when an image is encoded in RGB, these are the RGB, GBR and BRG trigrams. Another caveat is the presence of an (almost) unused channel, this happens with unused alpha channels, or sound encoded on 16bit but with the original data coming from an 8 bit source for example. In those cases one of the channels will almost never change thus projecting the whole histogram on a couple of planes in the 3D view. Here are some samples:
 
 #### Sound
 
@@ -95,7 +106,7 @@ This is human speech, notice the very small range of values that are used.
 For reference this is rock music.
 
 ![binglide looking at human speech](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/speech_16b.wav_3g.png)
-This is the same speech encoded on 16bit. Each high-order byte will be very close to 0xff or 0x00 because of the small amount of values that are actualy used. Each being a signed uint16 close to 0. This is why this pattern emerges.
+This is the same speech encoded on 16bit. Each high-order byte will be very close to 0xff or 0x00 because of the small amount of values that are actually used. Each being a signed uint16 close to 0. This is why this pattern emerges.
 
 #### Images
 
@@ -109,7 +120,7 @@ Images have the same diagonal shape but are _much_ more organic.
 Compressed data almost looks like random data, which is expected. But some patterns can still be recognized.
 
 ![binglide looking at gzip](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/gzip_2g.png)
-The screenshot above shows gzip's deflate compression. Notice the lines going diagonaly through the image.
+The screenshot above shows gzip's deflate compression. Notice the lines going diagonally through the image.
 
 ![binglide looking at gif](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/gif_2g.png)
 ![binglide looking at jpeg](https://raw.githubusercontent.com/wapiflapi/binglide/master/samples/jpeg_2g.png)
