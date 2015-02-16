@@ -1,14 +1,46 @@
 #!/usr/bin/env python
 
 import sys
-from distutils.core import setup
 
-if sys.version_info < (3, 0):
-    sys.stdout.write("Sorry, requires Python 3.x.\n")
+if sys.version_info < (3, 3, 0):
+    sys.stdout.write("It's %d. This requires Python > 3.3.\n" % datetime.now().year)
     sys.exit(1)
 
-setup(name='binglide',
-      version='1.0',
-      packages=['binglide'],
-      scripts=['bin/binglide'],
-      )
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+
+import binglide
+
+readme = open('README.md').read()
+requirements = open('requirements.txt').read()
+
+setup(
+    name='binglide',
+    version=binglide.__version__,
+    description='Tool for visual data analysis.',
+    long_description=readme,
+    author=binglide.__author__,
+    author_email=binglide.__email__,
+    url='https://github.com/wapiflapi/binglide',
+    license="MIT",
+    zip_safe=False,
+    keywords='binglide',
+    classifiers=[
+        'Development Status :: 2 - Pre-Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Natural Language :: English',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+    ],
+
+    scripts=['bin/binglide'],
+    packages=['binglide', 'binglide.workers'],
+    package_dir={'binglide': 'binglide'},
+    include_package_data=True,
+    install_requires=requirements,
+
+)
