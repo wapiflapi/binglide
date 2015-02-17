@@ -1,0 +1,5 @@
+server:
+
+  - cmd: "python3 -um binglide.server.workers.sample_worker"
+    name: sample_worker
+    numprocesses: 3

@@ -37,10 +37,9 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
 
-    scripts=['bin/binglide'],
-    packages=['binglide', 'binglide.workers'],
+    scripts=['bin/binglide', 'bin/binglide-server'],
+    packages=['binglide', 'binglide.server', 'binglide.server.workers'],
     package_dir={'binglide': 'binglide'},
-    include_package_data=True,
+    package_data={'': ['*.yaml']},
     install_requires=requirements,
-
 )
