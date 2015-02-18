@@ -12,18 +12,18 @@ try:
 except ImportError:
     from distutils.core import setup
 
-import binglide
+import binglide.meta
 
 readme = open('README.md').read()
 requirements = open('requirements.txt').read()
 
 setup(
     name='binglide',
-    version=binglide.__version__,
+    version=binglide.meta.__version__,
     description='Tool for visual data analysis.',
     long_description=readme,
-    author=binglide.__author__,
-    author_email=binglide.__email__,
+    author=binglide.meta.__author__,
+    author_email=binglide.meta.__email__,
     url='https://github.com/wapiflapi/binglide',
     license="MIT",
     zip_safe=False,
