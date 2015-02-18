@@ -1,5 +1,13 @@
+
 server:
 
-  - cmd: "python3 -um binglide.server.workers.sample_worker"
-    name: sample_worker
+  - name: bg_broker
+    cmd : python3 -um binglide.server.workers.broker --
+    args: [&BROKERADDR 'tcp://127.0.0.1:18422']
+    copy_env: true
+
+  - name: bg_sample_worker
+    cmd : python3 -um binglide.server.workers.sample_worker --
+    args: [*BROKERADDR]
+    copy_env: true
     numprocesses: 3
