@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import abc
+import logging
+import argparse
 
+import zmq
 
 class Endpoint(metaclass=abc.ABCMeta):
 
@@ -70,13 +74,60 @@ class Dispatcher(metaclass=DispatcherMeta):
 
     def dispatch(self, key, *args, **kwargs):
 
-        calbacks = self.dispatchtable.get(key, [])
+        callbacks = self.dispatchtable.get(key, [])
 
         for callback in callbacks:
-            return callback(*args, **kwargs)
+            return callback(self, *args, **kwargs)
 
         if self.assertive and not calbacks:
             return self.handle_unknown(key, *args, **kwargs)
 
     def handle_unknown(self, key, *args, **kwargs):
         raise NotImplementedError("Unknown event key <%s>." % key)
+
+
+class Worker(Dispatcher):
+
+    servicename = None
+
+    def __init__(self, socktype, zmqctx, config, assertive=False, loglvl=None):
+        super().__init__()
+
+        self.logger = logging.getLogger(
+            'binglide.server.workers.%s' % self.servicename)
+
+        if loglvl is None:
+            loglvl = os.environ.get('BG_LOGLVL', None)
+        if loglvl is not None:
+            self.logger.setLevel(loglvl)
+
+        self.zmqctx = zmqctx
+        self.socket = self.zmqctx.socket(socktype)
+        config(self.socket)
+
+    def get_service(self):
+        return bytes(self.servicename, 'utf8')
+
+    def start(self):
+        pass
+
+    def run(self):
+
+        self.start()
+
+        while True:
+            msg = self.socket.recv_multipart()
+            self.logger.info(msg)
+            self.dispatch(msg[1], msg)
+
+
+class Main(object):
+
+    def __init__(self):
+        self.zmqctx = zmq.Context()
+
+        self.parser = argparse.ArgumentParser()
+        self.setup(self.parser)
+
+        self.args = self.parser.parse_args()
+        self.run(self.args)

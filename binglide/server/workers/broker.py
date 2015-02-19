@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
 import collections
 
 import zmq
@@ -57,24 +58,17 @@ class GreedySetDict(collections.defaultdict):
         return value
 
 
-class Broker(utils.Dispatcher):
+class Broker(utils.Worker):
 
-    def __init__(self, zmqctx, router_config):
-        self.zmqctx = zmqctx
+    servicename = "broker"
 
-        self.router = self.zmqctx.socket(zmq.ROUTER)
-        router_config(self.router)
+    def __init__(self, *args, **kwargs):
+        super().__init__(zmq.ROUTER, *args, **kwargs)
 
         self.requests = collections.defaultdict(RoundRobin)
         self.idleworkers = GreedySetDict()
         self.activeworkers = {}
         self.jobs = GreedySetDict()
-
-    def run(self):
-
-        while True:
-            msg = self.router.recv_multipart()
-            self.dispatch(msg[1], msg)
 
     def issue_work(self, worker, task):
 
@@ -86,7 +80,7 @@ class Broker(utils.Dispatcher):
 
         self.jobs[job].add(worker)
         self.activeworkers[worker] = job
-        self.router.send_multipart(task)
+        self.socket.send_multipart(task)
 
     def match_worker(self, service):
 
@@ -95,7 +89,7 @@ class Broker(utils.Dispatcher):
 
         try:
             client, task = self.requests[service].pop()
-        except KeyError:
+        except IndexError:
             return
 
         # shouldn't fail because service has entries.
@@ -129,15 +123,18 @@ class Broker(utils.Dispatcher):
             msg[1] = protocol.XCANCEL
             msg[0] = worker
 
-            self.router.send_multipart(msg)
+            self.socket.send_multipart(msg)
 
     @utils.bind(protocol.READY)
     def on_ready(self, msg):
 
-        self.workers[msg[0]] = msg[2]
+        self.idleworkers[msg[0]] = msg[2]
         self.idleworkers[msg[2]].add(msg[0])
-        job = self.activeworkers.pop(msg[0])
-        self.jobs.removefrom(job, msg[0])
+        try:
+            job = self.activeworkers.pop(msg[0])
+            self.jobs.removefrom(job, msg[0])
+        except KeyError:
+            pass
 
         # We need to match in case there is already a task waiting.
         self.match_worker(msg[2])
@@ -145,13 +142,13 @@ class Broker(utils.Dispatcher):
     @utils.bind(protocol.XREPORT)
     def on_xreport(self, msg):
 
-        service = self.workers[msg[0]]
+        service = self.idleworkers[msg[0]]
 
         msg[0] = msg[2]
         msg[1] = protocol.REPORT
         msg[2] = service
 
-        self.router.send_multipart(msg)
+        self.socket.send_multipart(msg)
 
     @utils.bind(protocol.DISCONNECT)
     def on_disconnect(self, msg):
@@ -170,19 +167,15 @@ class Broker(utils.Dispatcher):
             pass
 
 
-def main():
+class Main(utils.Main):
 
-    import argparse
+    def setup(self, parser):
+        parser.add_argument("router", type=utils.Bind)
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("router", type=utils.Bind)
-    args = parser.parse_args()
-
-    zmqctx = zmq.Context()
-    broker = Broker(zmqctx, args.router)
-
-    broker.run()
+    def run(self, args):
+        broker = Broker(self.zmqctx, args.router)
+        broker.run()
 
 
 if __name__ == '__main__':
-    main()
+    Main()
