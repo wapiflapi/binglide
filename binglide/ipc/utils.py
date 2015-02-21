@@ -3,10 +3,12 @@
 
 import os
 import abc
+import json
 import logging
 import argparse
 
 import zmq
+import yaml
 
 from binglide.ipc import protocol
 
@@ -60,33 +62,33 @@ class bind(object):
         return f
 
 
-class DispatcherMeta(type):
+class Dispatcher(object):
 
-    def __new__(cls, name, bases, attrs):
-
-        # Not sure if we want this or not.
-        if not issubclass(attrs.setdefault('bind', bind), bind):
-            raise TypeError("bind should be subclass of %r" % bind)
-
-        dispatchtable = attrs.setdefault('dispatchtable', {})
-        for value in attrs.values():
-            for key in getattr(value, '_handles', []):
-                dispatchtable.setdefault(key, []).append(value)
-
-        return super().__new__(cls, name, bases, attrs)
-
-
-class Dispatcher(metaclass=DispatcherMeta):
+    bind = bind
 
     def __init__(self, assertive=False):
         self.assertive = assertive
+
+        # Not sure if we want this or not.
+        if not issubclass(self.bind, bind):
+            raise TypeError("bind should be subclass of %r" % bind)
+
+        if not hasattr(self, 'dispatchtable'):
+            self.dispatchtable = {}
+
+        for attr in dir(self):
+            handler = getattr(self, attr)
+            if not callable(handler) or not hasattr(handler, '_handles'):
+                continue
+            for key in handler._handles:
+                self.dispatchtable.setdefault(key, []).append(handler)
 
     def dispatch(self, key, *args, **kwargs):
 
         callbacks = self.dispatchtable.get(key, [])
 
         for callback in callbacks:
-            return callback(self, *args, **kwargs)
+            return callback(*args, **kwargs)
 
         if self.assertive and not callbacks:
             return self.handle_unknown(key, *args, **kwargs)
@@ -118,27 +120,36 @@ class Node(Dispatcher):
     def start(self):
         pass
 
-    def process_events(self, block=False, intercept=[]):
+    def process_events(self, block=False, intercept=None):
+        self.logger.debug("processing, block=%s, intercept=%s" % (block, intercept))
 
         while block or self.socket.get(zmq.EVENTS) & zmq.POLLIN:
-            block = False # only block once.
+
+            block = False  # only block once.
             msg = self.socket.recv_multipart()
 
             self.logger.debug("received: %s" % msg)
 
-            if msg[self.keyidx] in intercept:
+            if intercept is not None and intercept(msg):
                 return msg[self.keyidx], msg
 
             self.dispatch(msg[self.keyidx], msg)
+            self.logger.debug("dispatch ready.")
 
-    def wait_for(self, keys):
-        return self.process_events(block=True, intercept=keys)
+        self.logger.debug("stopped processing.")
+
+    def wait_for(self, intercept):
+        return self.process_events(block=True, intercept=intercept)
+
+    def wait_for_key(self, key):
+        return self.wait_for(lambda m: m[self.keyidx] == key)
 
     def run(self):
 
         self.start()
 
         while True:
+            self.logger.debug("MAIN LOOP.")
             self.process_events(block=True)
 
 
@@ -148,28 +159,11 @@ class Peer(Node):
         super().__init__(zmqctx, zmq.DEALER, keyidx, logger,
                          *args, **kwargs)
 
+    def encode_payload(self, payload):
+        return bytes(json.dumps(payload), 'utf8')
 
-class Worker(Peer):
-
-    def __init__(self, zmqctx, config, *args, **kwargs):
-        self.config = config
-        super().__init__(zmqctx, 0,
-                         'binglide.server.workers.%s' % self.servicename,
-                         *args, **kwargs)
-
-    def get_service(self):
-        return bytes(self.servicename, 'utf8')
-
-    def start(self):
-        self.send_ready()
-
-    def send_ready(self):
-        msg = [protocol.READY, self.get_service()]
-        self.socket.send_multipart(msg)
-
-    @bind(protocol.DISCONNECT)
-    def on_disconnect(self, msg):
-        sys.exit(0)
+    def decode_payload(self, payload):
+        return json.loads(str(payload, 'utf8'))
 
 
 class Client(Peer):
@@ -179,10 +173,16 @@ class Client(Peer):
         super().__init__(zmqctx, 0, logger, *args, **kwargs)
         self.reqid = 0
 
+    def wait_for_reqid(self, reqid):
+        return self.wait_for(lambda m: m[2] == reqid)
+
     def request(self, service, body):
 
         self.reqid = self.reqid + 1
+
+        service = bytes(service, 'utf8')
         reqid = bytes("%d" % self.reqid, 'utf8')
+        body = self.encode_payload(body)
 
         msg = [protocol.REQUEST, service, reqid, b'', body]
         self.socket.send_multipart(msg)
@@ -191,42 +191,107 @@ class Client(Peer):
 
     def request_sync(self, service, body):
         # This needs a timeout because there is no garantee the network will
-        # answer. Also there might be more than answer, in that case the user
-        # can continue to monitor reqid.
+        # answer. Also there might be more than one answer, in that case the
+        # user can continue to monitor reqid.
 
         thisreqid = self.request(service, body)
+        key, msg = self.wait_for_reqid(thisreqid)
+        service, reqid, body = self.parse_report(msg)
+        return reqid, body
 
-        while True:
-            key, msg = self.wait_for((protocol.REPORT,))
-            service, reqid, body = self.parse_report(msg)
-            if reqid == thisreqid:
-                return reqid, body
+    def cancel(self, reqid, body=None):
+        body = self.encode_payload({} if body is None else body)
+        msg = [protocol.CANCEL, b'', reqid, b'', body]
+        self.socket.send_multipart(msg)
 
     def list(self):
         self.socket.send_multipart([protocol.LIST])
 
     def list_sync(self):
         self.list()
-        key, msg = self.wait_for((protocol.LIST,))
+        key, msg = self.wait_for_key(protocol.LIST)
         return [str(service, 'utf8') for service in msg[1:]]
 
     def parse_report(self, msg):
         # service, reqid, body
-        return msg[1], msg[2], msg[5]
+        return str(msg[1], 'utf8'), msg[2], self.decode_payload(msg[4])
 
     @bind(protocol.REPORT)
     def on_report(self, msg):
         service, reqid, body = self.parse_report(msg)
-        self.handle_report(self, service, reqid, body)
+        self.handle_report(service, reqid, body)
+
+
+class Worker(Client):
+
+    def __init__(self, zmqctx, config, *args, **kwargs):
+        super().__init__(zmqctx, config, self.get_logger(), *args, **kwargs)
+        self.canceledjobs = {}
+
+    def get_logger(self):
+        return 'binglide.server.workers.%s' % self.servicename
+
+    def get_service(self):
+        return bytes(self.servicename, 'utf8')
+
+    def start(self):
+        self.ready()
+
+    def ready(self):
+        msg = [protocol.READY, self.get_service()]
+        self.socket.send_multipart(msg)
+
+    def get_ukey(self, meta):
+        retaddr, reqid, clientid = meta
+        return (reqid, clientid)
+
+    def report(self, meta, body):
+        retaddr, reqid, clientid = meta
+        body = self.encode_payload(body)
+        self.socket.send_multipart([protocol.XREPORT, retaddr,
+                                    reqid, clientid, body])
+
+    def check_canceled(self, meta):
+
+        self.process_events()
+
+        ukey = self.get_ukey(meta)
+        return self.canceledjobs.pop(ukey, None)
+
+    def handle_xcancel(self, meta, body):
+        self.canceledjobs[self.get_ukey(meta)] = body
+
+    @bind(protocol.XREQUEST)
+    def on_xrequest(self, msg):
+        _, retaddr, reqid, clientid, body = msg
+        body = self.decode_payload(body)
+        self.handle_xrequest((retaddr, reqid, clientid), body)
+
+    @bind(protocol.XCANCEL)
+    def on_xcancel(self, msg):
+        _, retaddr, reqid, clientid, body = msg
+        body = self.decode_payload(body)
+        self.handle_xcancel((retaddr, reqid, clientid), body)
+
+    @bind(protocol.DISCONNECT)
+    def on_disconnect(self, msg):
+        sys.exit(0)
 
 
 class Main(object):
 
     def __init__(self):
 
-        self.loglvl = os.environ.get('BG_LOGLVL', None)
-        if self.loglvl is not None:
-            logging.basicConfig(level=self.loglvl)
+        loginfo = yaml.load(os.environ.get('BG_LOGLVL', ''))
+
+        self.loglvl = None
+
+        if isinstance(loginfo, str):
+
+            logging.basicConfig(level=loginfo)
+        elif isinstance(loginfo, dict):
+            for logger, lvl in loginfo.items():
+                logging.getLogger(logger).setLevel(lvl)
 
         self.zmqctx = zmq.Context()
 

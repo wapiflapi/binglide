@@ -8,11 +8,19 @@ import zmq
 from binglide.ipc import utils, protocol
 
 
+class KeyDefaultDict(collections.defaultdict):
+
+    def __missing__(self, key):
+        if self.default_factory is None:
+            raise KeyError(key)
+        return self.setdefault(key, self.default_factory(key))
+
+
 class RoundRobin(object):
 
     def __init__(self):
 
-        self.clients = collections.defaultdict(self.add_client)
+        self.clients = KeyDefaultDict(self.add_client)
         self.queue = collections.deque()
 
     def add_client(self, client):
@@ -157,6 +165,7 @@ class Broker(utils.Node):
         msg[1] = protocol.REPORT
         msg[2] = service
 
+        self.logger.warn("forwarding report: %s" % msg)
         self.socket.send_multipart(msg)
 
     @utils.bind(protocol.DISCONNECT)
@@ -183,7 +192,8 @@ class Main(utils.Main):
         parser.add_argument("router", type=utils.BindSocket)
 
     def run(self, args):
-        broker = Broker(self.zmqctx, args.router, loglvl=self.loglvl)
+        broker = Broker(self.zmqctx, args.router,
+                        loglvl=self.loglvl, assertive=True)
         broker.logger.info("starting!")
         broker.run()
 

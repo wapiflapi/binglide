@@ -2,8 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import json
 import shlex
+import pprint
 import asyncio
+import argparse
+import traceback
 
 import zmq
 
@@ -33,18 +37,61 @@ class ClientDbg(utils.Client):
         if not cmd:
             sys.exit()
 
-        cmd = shlex.split(cmd)
+        self.handle_cmd(shlex.split(cmd))
+        self.prompt()
 
-        if cmd:
-            try:
-                self.dispatch("cmd_%s" % cmd[0], cmd)
-            except NotImplementedError as e:
-                print("Unknown command %r (%s)." % (cmd[0], e), file=sys.stderr)
+        # This is non blocking anyway. And it will handle the cases when the
+        # socket became readable but the fd wasn't triggered because of
+        # http://api.zeromq.org/4-0:zmq-getsockopt#toc24
+        self.eventloop.call_soon(self.process_events)
 
+    def handle_cmd(self, cmd):
+
+        if not cmd:
+            return
+
+        key = "cmd_%s" % cmd[0]
+
+        try:
+            handler = self.dispatchtable[key][0]
+        except (KeyError, IndexError):
+            print("Unknown command %r." % cmd[0], file=sys.stderr)
+            return
+
+        parser = argparse.ArgumentParser(prog=cmd[0],
+                                         description=handler.__doc__)
+
+        try:
+            handler(parser, cmd[1:])
+        except SystemExit as e:
+            if isinstance(e.code, str):
+                print(e, file=sys.stderr)
+        except Exception as e:
+            print("%s" % (traceback.format_exc(),), end="", file=sys.stderr)
+
+    def handle_report(self, service, reqid, body):
+        print()
+        print("got answer for %s, %r:" % (service, reqid))
+        pprint.pprint(body)
         self.prompt()
 
     @utils.bind()
-    def on_cmd_meta(self, cmd):
+    def on_cmd_help(self, parser, cmd):
+        """List available commands."""
+
+        args = parser.parse_args(cmd)
+
+        for key, callbacks in self.dispatchtable.items():
+            if not isinstance(key, str) or not key.startswith('cmd_'):
+                continue
+            print("%s\t - %s" % (callbacks[0].__name__[7:],
+                                 callbacks[0].__doc__))
+
+    @utils.bind()
+    def on_cmd_meta(self, parser, cmd):
+        """Display information about the current setup."""
+
+        args = parser.parse_args(cmd)
 
         def header(title, width=80):
             print((" %s " % title).center(width, '='))
@@ -67,9 +114,38 @@ class ClientDbg(utils.Client):
         print("services  : %s" % ", ".join(servicelist), end="\033[K\n")
         footer()
 
-    def handle_report(self, service, reqid, body):
-        self.logger.info("got answer for %s, %r" % (service, reqid))
+    @utils.bind()
+    def on_cmd_req(self, parser, cmd):
+        """Issue a request to the network."""
 
+        parser.add_argument("service")
+        parser.add_argument("cmd", type=json.loads)
+        args = parser.parse_args(cmd)
+
+        reqid = self.request(args.service, args.cmd)
+        print("request id: %s" % reqid)
+
+    @utils.bind()
+    def on_cmd_reqb(self, parser, cmd):
+        """Issue a blocking request to the network."""
+
+        parser.add_argument("service")
+        parser.add_argument("cmd", type=json.loads)
+        args = parser.parse_args(cmd)
+
+        reqid, body = self.request_sync(args.service, args.cmd)
+        print("request id: %s" % reqid)
+        pprint.pprint(body)
+
+    @utils.bind()
+    def on_cmd_cancel(self, parser, cmd):
+        """Cancel a request."""
+
+        parser.add_argument("reqid")
+        args = parser.parse_args(cmd)
+
+        reqid = bytes(args.reqid, 'utf8')
+        self.cancel(reqid)
 
 
 class Main(utils.Main):
