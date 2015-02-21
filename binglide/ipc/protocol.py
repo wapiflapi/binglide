@@ -8,6 +8,8 @@ def command(key):
     return VERSION + b"." + key
 
 
+LIST = command(b"LIST")
+
 REQUEST = command(b"REQUEST")
 XREQUEST = command(b"XREQUEST")
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging
 import collections
 
 import zmq
@@ -58,14 +57,17 @@ class GreedySetDict(collections.defaultdict):
         return value
 
 
-class Broker(utils.Worker):
+class Broker(utils.Node):
 
-    servicename = "broker"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(zmq.ROUTER, *args, **kwargs)
+    def __init__(self, zmqctx, config, *args, **kwargs):
+        self.config = config
+        super().__init__(zmqctx, zmq.ROUTER, 1,
+                         'binglide.server.broker', *args, **kwargs)
 
         self.requests = collections.defaultdict(RoundRobin)
+
+        self.workers = {}
+        self.services = GreedySetDict()
         self.idleworkers = GreedySetDict()
         self.activeworkers = {}
         self.jobs = GreedySetDict()
@@ -95,6 +97,11 @@ class Broker(utils.Worker):
         # shouldn't fail because service has entries.
         worker = self.idleworkers.popfrom(service)
         self.issue_work(worker, task)
+
+    @utils.bind(protocol.LIST)
+    def on_list(self, msg):
+        reply = [msg[0], protocol.LIST] + list(self.services)
+        self.socket.send_multipart(reply)
 
     @utils.bind(protocol.REQUEST)
     def on_request(self, msg):
@@ -128,6 +135,8 @@ class Broker(utils.Worker):
     @utils.bind(protocol.READY)
     def on_ready(self, msg):
 
+        self.workers[msg[0]] = msg[2]
+        self.services[msg[2]] = msg[0]
         self.idleworkers[msg[0]] = msg[2]
         self.idleworkers[msg[2]].add(msg[0])
         try:
@@ -153,7 +162,8 @@ class Broker(utils.Worker):
     @utils.bind(protocol.DISCONNECT)
     def on_disconnect(self, msg):
 
-        service = self.worker.pop(msg[0])
+        service = self.workers.pop(msg[0])
+        self.services.removefrom(service, msg[0])
 
         try:
             self.idleworkers.removefrom(service, msg[0])
@@ -170,10 +180,11 @@ class Broker(utils.Worker):
 class Main(utils.Main):
 
     def setup(self, parser):
-        parser.add_argument("router", type=utils.Bind)
+        parser.add_argument("router", type=utils.BindSocket)
 
     def run(self, args):
-        broker = Broker(self.zmqctx, args.router)
+        broker = Broker(self.zmqctx, args.router, loglvl=self.loglvl)
+        broker.logger.info("starting!")
         broker.run()
 
 
