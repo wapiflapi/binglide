@@ -1,3 +1,4 @@
+pyzmq
 pyyaml
 appdirs
 circus>=0.12.0

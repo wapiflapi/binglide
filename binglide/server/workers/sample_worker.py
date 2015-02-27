@@ -10,10 +10,6 @@ class SampleWorker(utils.Worker):
 
     servicename = "sample_worker"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.canceled = set()
-
     def handle_xrequest(self, meta, body):
 
         # Dummy task, lets send several reports.
@@ -23,11 +19,11 @@ class SampleWorker(utils.Worker):
             canceled = self.check_canceled(meta)
             if canceled is not None:
                 # We could inspect canceled if we wanted to.
-                return
+                return True
 
             self.report(meta, {'status': status})
 
-        self.ready()
+        return True
 
 
 class Main(utils.Main):

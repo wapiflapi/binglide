@@ -265,13 +265,15 @@ class Worker(Client):
     def on_xrequest(self, msg):
         _, retaddr, reqid, clientid, body = msg
         body = self.decode_payload(body)
-        self.handle_xrequest((retaddr, reqid, clientid), body)
+        if self.handle_xrequest((retaddr, reqid, clientid), body):
+            self.ready()
 
     @bind(protocol.XCANCEL)
     def on_xcancel(self, msg):
         _, retaddr, reqid, clientid, body = msg
         body = self.decode_payload(body)
-        self.handle_xcancel((retaddr, reqid, clientid), body)
+        if self.handle_xcancel((retaddr, reqid, clientid), body):
+            self.ready()
 
     @bind(protocol.DISCONNECT)
     def on_disconnect(self, msg):
