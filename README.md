@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/binglide/badge/?version=ng)](http://binglide.readthedocs.org/en/ng/)
+
 # binglide-ng
 
 This branch is used to work on the next version of binglide. Documentation and
