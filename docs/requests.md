@@ -1,9 +1,10 @@
 
-```yaml
-# TODO:
-# inputs, lengths and precisions should be vectors in order to handle
-# multi-dimensional data properly. This shouldnt pose any problems.
+A request made to the backend should have a standard format that is flexible
+enough to be the same regardless of the type of analysis that is requested while
+still conveying generic information about how the request should be processed,
+in particular it should allow for a generic cache management and sampling.
 
+```yaml
 request:
 
   options:
@@ -61,3 +62,5 @@ request:
       commit: false
 ```
 
+This format can easily be extended to support multi-dimensional inputs by simply
+having offsets, lengths, sample rates and blocksizes being arrays.

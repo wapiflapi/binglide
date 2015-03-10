@@ -1,6 +1,5 @@
 
-
-%VERSION% = BXMDP00
+`VERSION` = BXMDP00
 
 
 > When receiving messages a ROUTER socket shall prepend a message part
@@ -16,18 +15,18 @@ This extra frame is not shown in the sub-protocol commands explained below.
 
 ### from CLIENT
 
-1. %VERSION%.LIST
+1. `VERSION`.LIST
 
 ### to CLIENT
 
-1. %VERSION%.LIST
+1. `VERSION`.LIST
 2. connected services (repeated)
 
 ## REQUEST
 
 ### from CLIENT
 
-1. %VERSION%.REQUEST
+1. `VERSION`.REQUEST
 2. service name; SHOULD be utf8 encoded string.
 3. request id; opaque binary
 4. client id, should be empty if not set by broker
@@ -35,7 +34,7 @@ This extra frame is not shown in the sub-protocol commands explained below.
 
 ### to WORKER
 
-1. %VERSION%.XREQUEST
+1. `VERSION`.XREQUEST
 2. return address; envelope stack
 3. request id; opaque binary
 4. client id, should be empty if not set by broker
@@ -46,7 +45,7 @@ This extra frame is not shown in the sub-protocol commands explained below.
 
 ### from CLIENT
 
-1. %VERSION%.CANCEL
+1. `VERSION`.CANCEL
 2. service name; SHOULD be utf8 encoded string. CAN be empty.
 3. request id; opaque binary
 4. client id, should be empty if not set by broker
@@ -54,7 +53,7 @@ This extra frame is not shown in the sub-protocol commands explained below.
 
 ### to WORKER
 
-1. %VERSION%.XCANCEL
+1. `VERSION`.XCANCEL
 2. return address; envelope stack
 3. request id; opaque binary
 4. client id, should be empty if not set by broker
@@ -65,7 +64,7 @@ This extra frame is not shown in the sub-protocol commands explained below.
 
 ### from WORKER
 
-1. %VERSION%.XREPORT
+1. `VERSION`.XREPORT
 2. return address; envelope stack
 3. request id; opaque binary4
 4. client id, should be empty if not set by broker
@@ -73,7 +72,7 @@ This extra frame is not shown in the sub-protocol commands explained below.
 
 ### to CLIENT
 
-1. %VERSION%.REPORT
+1. `VERSION`.REPORT
 3. service name; SHOULD be utf8 encoded string.
 2. request id; opaque binary
 4. client id, should be empty if not set by broker
@@ -84,7 +83,7 @@ This extra frame is not shown in the sub-protocol commands explained below.
 
 ### from WORKER
 
-1. %VERSION%.READY
+1. `VERSION`.READY
 2. service name; SHOULD be utf8 encoded string.
 
 
@@ -92,5 +91,5 @@ This extra frame is not shown in the sub-protocol commands explained below.
 
 ### to BROKER & from BROKER
 
-1. %VERSION%.DISCONNECT
+1. `VERSION`.DISCONNECT
 

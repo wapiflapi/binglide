@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import collections
 
 import zmq
 
-from binglide.ipc import utils, protocol
+from binglide.ipc import messaging, protocol, utils
 
 
 class KeyDefaultDict(collections.defaultdict):
@@ -65,7 +64,7 @@ class GreedySetDict(collections.defaultdict):
         return value
 
 
-class Broker(utils.Node):
+class Broker(messaging.Node):
 
     def __init__(self, zmqctx, config, *args, **kwargs):
         self.config = config
@@ -106,12 +105,12 @@ class Broker(utils.Node):
         worker = self.idleworkers.popfrom(service)
         self.issue_work(worker, task)
 
-    @utils.bind(protocol.LIST)
+    @messaging.bind(protocol.LIST)
     def on_list(self, msg):
         reply = [msg[0], protocol.LIST] + list(self.services)
         self.socket.send_multipart(reply)
 
-    @utils.bind(protocol.REQUEST)
+    @messaging.bind(protocol.REQUEST)
     def on_request(self, msg):
 
         if not msg[4]:
@@ -123,7 +122,7 @@ class Broker(utils.Node):
         # We need to match in case there is already a worker waiting.
         self.match_worker(msg[2])
 
-    @utils.bind(protocol.CANCEL)
+    @messaging.bind(protocol.CANCEL)
     def on_cancel(self, msg):
 
         if not msg[4]:
@@ -140,7 +139,7 @@ class Broker(utils.Node):
 
             self.socket.send_multipart(msg)
 
-    @utils.bind(protocol.READY)
+    @messaging.bind(protocol.READY)
     def on_ready(self, msg):
 
         self.workers[msg[0]] = msg[2]
@@ -156,7 +155,7 @@ class Broker(utils.Node):
         # We need to match in case there is already a task waiting.
         self.match_worker(msg[2])
 
-    @utils.bind(protocol.XREPORT)
+    @messaging.bind(protocol.XREPORT)
     def on_xreport(self, msg):
 
         service = self.idleworkers[msg[0]]
@@ -168,7 +167,7 @@ class Broker(utils.Node):
         self.logger.warn("forwarding report: %s" % msg)
         self.socket.send_multipart(msg)
 
-    @utils.bind(protocol.DISCONNECT)
+    @messaging.bind(protocol.DISCONNECT)
     def on_disconnect(self, msg):
 
         service = self.workers.pop(msg[0])

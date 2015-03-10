@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import sys
@@ -12,10 +11,10 @@ import traceback
 import zmq
 
 from binglide import ipc
-from binglide.ipc import utils
+from binglide.ipc import dispatching, protocol, utils
 
 
-class ClientDbg(utils.Client):
+class ClientDbg(protocol.Client):
 
     def run(self):
         self.eventloop = asyncio.get_event_loop()
@@ -75,7 +74,7 @@ class ClientDbg(utils.Client):
         pprint.pprint(body)
         self.prompt()
 
-    @utils.bind()
+    @dispatching.bind()
     def on_cmd_help(self, parser, cmd):
         """List available commands."""
 
@@ -87,7 +86,7 @@ class ClientDbg(utils.Client):
             print("%s\t - %s" % (callbacks[0].__name__[7:],
                                  callbacks[0].__doc__))
 
-    @utils.bind()
+    @dispatching.bind()
     def on_cmd_meta(self, parser, cmd):
         """Display information about the current setup."""
 
@@ -114,7 +113,7 @@ class ClientDbg(utils.Client):
         print("services  : %s" % ", ".join(servicelist), end="\033[K\n")
         footer()
 
-    @utils.bind()
+    @dispatching.bind()
     def on_cmd_req(self, parser, cmd):
         """Issue a request to the network."""
 
@@ -125,7 +124,7 @@ class ClientDbg(utils.Client):
         reqid = self.request(args.service, args.cmd)
         print("request id: %s" % reqid)
 
-    @utils.bind()
+    @dispatching.bind()
     def on_cmd_reqb(self, parser, cmd):
         """Issue a blocking request to the network."""
 
@@ -137,7 +136,7 @@ class ClientDbg(utils.Client):
         print("request id: %s" % reqid)
         pprint.pprint(body)
 
-    @utils.bind()
+    @dispatching.bind()
     def on_cmd_cancel(self, parser, cmd):
         """Cancel a request."""
 

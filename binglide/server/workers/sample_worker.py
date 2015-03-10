@@ -1,12 +1,11 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import time
 
-from binglide.ipc import utils
+from binglide.ipc import protocol, utils
 
 
-class SampleWorker(utils.Worker):
+class SampleWorker(protocol.Worker):
 
     servicename = "sample_worker"
 
