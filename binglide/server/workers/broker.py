@@ -187,14 +187,10 @@ class Broker(messaging.Node):
 
 class Main(utils.Main):
 
+    runnable = Broker
+
     def setup(self, parser):
         parser.add_argument("router", type=utils.BindSocket)
-
-    def run(self, args):
-        broker = Broker(self.zmqctx, args.router,
-                        loglvl=self.loglvl, assertive=True)
-        broker.logger.info("starting!")
-        broker.run()
 
 
 if __name__ == '__main__':

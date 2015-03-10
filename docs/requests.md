@@ -8,7 +8,13 @@ in particular it should allow for a generic cache management and sampling.
 request:
 
   options:
-    # service specific.
+    updates: None # maybe something like [None, notify, push] ?
+	# this is probably not useful, would be for chaning data?
+	# for streams this wont work since its not the same request, we need
+	# some other type of request to handle those.
+
+    # more service specific options can be added here.
+
 
   inputs:
 

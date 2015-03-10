@@ -32,3 +32,13 @@ class Main(object):
 
         self.args = self.parser.parse_args()
         self.run(self.args)
+
+
+    def setup(self, parser):
+        parser.add_argument("router", type=ConnectSocket)
+
+    def run(self, args):
+        worker = self.runnable(self.zmqctx, args.router,
+                               loglvl=self.loglvl, assertive=True)
+        worker.run()
+

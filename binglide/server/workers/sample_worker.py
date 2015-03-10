@@ -26,14 +26,7 @@ class SampleWorker(protocol.Worker):
 
 
 class Main(utils.Main):
-
-    def setup(self, parser):
-        parser.add_argument("router", type=utils.ConnectSocket)
-
-    def run(self, args):
-        worker = SampleWorker(self.zmqctx, args.router,
-                              loglvl=self.loglvl, assertive=True)
-        worker.run()
+    runnable = SampleWorker
 
 
 if __name__ == '__main__':
