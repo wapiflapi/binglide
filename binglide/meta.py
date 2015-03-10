@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 __all__ = ['__author__', '__email__', '__version__']
 
 __author__ = 'Wannes `wapiflapi` Rombouts'

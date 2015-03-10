@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import time
 
 from binglide.ipc import protocol, utils

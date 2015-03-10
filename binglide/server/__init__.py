@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Backend infrastructure for binglide computations.
 """

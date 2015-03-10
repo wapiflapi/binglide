@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import sys
 import json
 import shlex
@@ -78,8 +76,6 @@ class ClientDbg(protocol.Client):
     def on_cmd_help(self, parser, cmd):
         """List available commands."""
 
-        args = parser.parse_args(cmd)
-
         for key, callbacks in self.dispatchtable.items():
             if not isinstance(key, str) or not key.startswith('cmd_'):
                 continue
@@ -89,8 +85,6 @@ class ClientDbg(protocol.Client):
     @dispatching.bind()
     def on_cmd_meta(self, parser, cmd):
         """Display information about the current setup."""
-
-        args = parser.parse_args(cmd)
 
         def header(title, width=80):
             print((" %s " % title).center(width, '='))

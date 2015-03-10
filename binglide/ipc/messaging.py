@@ -1,16 +1,10 @@
-# -*- coding: utf-8 -*-
-
-import os
 import abc
-import json
 import logging
-import argparse
 
 import zmq
-import yaml
 
 from binglide.ipc import dispatching
-from binglide.ipc.dispatching import bind
+from binglide.ipc.dispatching import bind  # NOQA
 
 
 class Endpoint(metaclass=abc.ABCMeta):
@@ -25,7 +19,7 @@ class Endpoint(metaclass=abc.ABCMeta):
 
     def __call__(self, socket):
         if self.identity is not None:
-            socket.identity = identity
+            socket.identity = self.identity
         self.set_endpoint(socket)
         return socket
 

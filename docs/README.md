@@ -39,5 +39,5 @@ the same time offer APIs for those workers to delagate work to others. The two
 main topics that need to be tackled are:
 
   - [Multiprocess control, delegation](./multiprocessing.md)
-  - [Cache management](./cache.md)
+  - [Cache management](./requests.md)
 

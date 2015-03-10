@@ -5,7 +5,8 @@ import sys
 
 if sys.version_info < (3, 3, 0):
     from datetime import datetime
-    sys.stdout.write("It's %d. This requires Python > 3.3.\n" % datetime.now().year)
+    sys.stdout.write("It's %d. This requires Python > 3.3.\n"
+                     % datetime.now().year)
     sys.exit(1)
 
 try:
@@ -45,6 +46,7 @@ setup(
     package_data={'binglide': ['config.yaml']},
 
     install_requires=requirements,
-    # We need the development version of Circus as 0.12 has not been released yet
-    dependency_links=['git+https://github.com/circus-tent/circus.git#egg=circus-0.12.0']
+    # Circus 0.12 has not been released yet.
+    dependency_links=['git+https://github.com/circus-tent/'
+                      'circus.git#egg=circus-0.12.0']
 )

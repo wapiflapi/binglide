@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from binglide.ipc import utils
 
 
@@ -13,5 +11,5 @@ class CacheAgregator(utils.Worker):
         self.reports[reqid] = (service, report)
 
     def handle_xrequest(self, meta, request):
-        result = None
-        tasks = {}
+        result = None  # NOQA
+        tasks = {}  # NOQA

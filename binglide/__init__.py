@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-from binglide.meta import *  # noqa
+from binglide.meta import *  # NOQA
 
 
 def main():
