@@ -1,8 +1,8 @@
 import abc
-import logging
 
 import zmq
 
+from binglide import logging
 from binglide.ipc import dispatching
 from binglide.ipc.dispatching import bind  # NOQA
 
@@ -48,10 +48,7 @@ class Node(dispatching.Dispatcher):
 
         self.keyidx = keyidx
 
-        if not isinstance(logger, logging.Logger):
-            self.logger = logging.getLogger(logger)
-        else:
-            self.logger = logger
+        self.logger = logging.getLogger(logger)
 
         if loglvl is not None:
             self.logger.setLevel(loglvl)

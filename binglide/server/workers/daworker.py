@@ -1,38 +1,31 @@
-# DAWorkers aren't normal workers. We dont want:
-#   - One DAWorker handling several data types (files, streams, ...)
-#   - One DAWorker handling several data sourcers (two streams, two files).
-#
-# DAWorkers should be a class generating a worker service for a given
-# DataAccessor Instance. Service name should be generated or specified by
-# arguments and be "unique". Instanciating several DAWorkers for the samesource
-# is probably a stupid thing to do. But I don't think we're in a position to
-# check for this.
-
 import importlib
 
-from binglide.ipc import protocol, utils
+from binglide.ipc import bodyfmt, utils
 from binglide.data import Accessor
-from binglide.server.workers import ReportAware, CacheAware
+from binglide.server.workers import CachedReporter
 
 
-class DAWorker(protocol.Worker, ReportAware, CacheAware):
+class DAWorker(CachedReporter):
 
-    def __init__(self, *args, **kwargs):
-        self.accessor = self.args.accessor
-        self.servicename = "%s://%s" % (self.accessor.__qualname__,
-                                        self.accessor.uri)
-        super().__init__(self, *args, **kwargs)
+    def __init__(self, accessor, *args, **kwargs):
+        self.accessor = accessor
+        self.servicename = self.accessor.uri
+        super().__init__(*args, **kwargs)
 
-    def handle_xrequest(self, meta, body):
+    def __repr__(self):
+        return 'daworker(%r)' % self.servicename
 
-        details = self.accessor.get_data(
-            body.request.options.offset,
-            body.request.options.size,
-            body.request.options.sample,
-            body.request.options.margin)
+    def gen_reports(self, body):
 
-        self.commit(*details)
-        self.report(*details)
+        *meta, data = self.accessor.get_data(
+            body.options.offset, body.options.size,
+            body.options.sample, body.options.margin)
+
+        response = bodyfmt.BodyFmt()
+        (response.offset, response.size,
+         response.sample, response.margin) = meta
+
+        yield response, data
 
 
 class import_object(object):
@@ -43,18 +36,24 @@ class import_object(object):
     def __call__(self, name):
         modulename, objname = name.rsplit('.', 1)
         obj = getattr(importlib.import_module(modulename), objname)
-        if self.abc is not None and not isinstance(obj, self.abc):
+        if self.abc is not None and not issubclass(obj, self.abc):
             raise TypeError("Not an instance of %r." % self.abc)
         return obj
 
 
-class Main(utils.WorkerMain):
-
-    runnable = DAWorker
+class Main(utils.Main):
 
     def setup(self, parser):
         super().setup(parser)
         parser.add_argument("accessor", type=import_object(abc=Accessor))
+
+    def run(self, args):
+
+        accessor = args.accessor()
+
+        runnable = DAWorker(accessor, self.zmqctx, args.router,
+                            loglvl=self.loglvl, assertive=True)
+        runnable.run()
 
 
 if __name__ == '__main__':

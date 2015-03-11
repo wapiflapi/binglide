@@ -1,4 +1,5 @@
 pyzmq
 pyyaml
 appdirs
+attrdict
 circus>=0.12.0

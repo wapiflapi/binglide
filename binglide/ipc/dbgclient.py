@@ -66,10 +66,12 @@ class ClientDbg(protocol.Client):
         except Exception as e:
             print("%s" % (traceback.format_exc(),), end="", file=sys.stderr)
 
-    def handle_report(self, service, reqid, body):
+    def handle_report(self, service, reqid, body, data):
         print()
         print("got answer for %s, %r:" % (service, reqid))
         pprint.pprint(body)
+        if data is not None:
+            print("Attached data frame:\n%s" % data)
         self.prompt()
 
     @dispatching.bind()

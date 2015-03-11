@@ -4,6 +4,7 @@ import json
 import zmq
 
 from binglide.ipc import messaging
+from binglide.ipc import bodyfmt
 
 VERSION = b"BXMDP00"
 
@@ -33,10 +34,14 @@ class Peer(messaging.Node):
                          *args, **kwargs)
 
     def encode_payload(self, payload):
-        return bytes(json.dumps(payload), 'utf8')
+        # FIXME: attrdict is not JSON encodable.
+        # The dict() fix bellow is not good because it won't
+        # work for nested dicts. We need a better solution.
+        return bytes(json.dumps(dict(payload)), 'utf8')
 
     def decode_payload(self, payload):
-        return json.loads(str(payload, 'utf8'))
+        return json.loads(str(payload, 'utf8'),
+                          object_hook=bodyfmt.BodyFmt)
 
 
 class Client(Peer):
@@ -63,14 +68,14 @@ class Client(Peer):
         return reqid
 
     def request_sync(self, service, body):
-        # This needs a timeout because there is no garantee the network will
-        # answer. Also there might be more than one answer, in that case the
-        # user can continue to monitor reqid.
+        # FIXME: This needs a timeout because there is no garantee the network
+        # will answer. Also there might be more than one answer, in that case
+        # the user can continue to monitor reqid.
 
         thisreqid = self.request(service, body)
         key, msg = self.wait_for_reqid(thisreqid)
-        service, reqid, body = self.parse_report(msg)
-        return reqid, body
+        service, reqid, body, data = self.parse_report(msg)
+        return reqid, body, data
 
     def cancel(self, reqid, body=None):
         body = self.encode_payload({} if body is None else body)
@@ -86,13 +91,14 @@ class Client(Peer):
         return [str(service, 'utf8') for service in msg[1:]]
 
     def parse_report(self, msg):
-        # service, reqid, body
-        return str(msg[1], 'utf8'), msg[2], self.decode_payload(msg[4])
+        # service, reqid, body, [data]
+        data = None if len(msg) < 6 else msg[5]
+        return str(msg[1], 'utf8'), msg[2], self.decode_payload(msg[4]), data
 
     @messaging.bind(REPORT)
     def on_report(self, msg):
-        service, reqid, body = self.parse_report(msg)
-        self.handle_report(service, reqid, body)
+        service, reqid, body, data = self.parse_report(msg)
+        self.handle_report(service, reqid, body, data)
 
 
 class Worker(Client):
@@ -101,8 +107,11 @@ class Worker(Client):
         super().__init__(zmqctx, config, self.get_logger(), *args, **kwargs)
         self.canceledjobs = {}
 
+    def __repr__(self):
+        return self.servicename
+
     def get_logger(self):
-        return 'binglide.server.workers.%s' % self.servicename
+        return 'binglide.server.workers.%s' % (self,)
 
     def get_service(self):
         return bytes(self.servicename, 'utf8')
@@ -119,11 +128,13 @@ class Worker(Client):
         retaddr, reqid, clientid = meta
         return (reqid, clientid)
 
-    def report(self, meta, body):
+    def report(self, meta, body, data=None):
         retaddr, reqid, clientid = meta
         body = self.encode_payload(body)
-        self.socket.send_multipart([XREPORT, retaddr,
-                                    reqid, clientid, body])
+        msg = [XREPORT, retaddr, reqid, clientid, body]
+        if data is not None:
+            msg.append(data)
+        self.socket.send_multipart(msg)
 
     def check_canceled(self, meta):
 

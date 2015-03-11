@@ -12,3 +12,9 @@ server:
     copy_env: true
     numprocesses: 3
 
+  - name: bg_daw_random
+    cmd : python3 -um binglide.server.workers.daworker --
+    args: [*BROKERADDR, binglide.data.accessors.defaults.Random]
+    copy_env: true
+    numprocesses: 1
+

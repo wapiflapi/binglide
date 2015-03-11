@@ -162,7 +162,7 @@ class Broker(messaging.Node):
         msg[1] = protocol.REPORT
         msg[2] = service
 
-        self.logger.warn("forwarding report: %s" % msg)
+        self.logger.debug("forwarding report: %s" % msg)
         self.socket.send_multipart(msg)
 
     @messaging.bind(protocol.DISCONNECT)

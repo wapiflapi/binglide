@@ -1,10 +1,10 @@
 import os
-import logging
 import argparse
 
 import zmq
 import yaml
 
+from binglide import logging
 from binglide.ipc.messaging import BindSocket, ConnectSocket  # NOQA
 
 
@@ -17,7 +17,6 @@ class Main(object):
         self.loglvl = None
 
         if isinstance(loginfo, str):
-
             logging.basicConfig(level=loginfo)
         elif isinstance(loginfo, dict):
             for logger, lvl in loginfo.items():
@@ -35,6 +34,6 @@ class Main(object):
         parser.add_argument("router", type=ConnectSocket)
 
     def run(self, args):
-        worker = self.runnable(self.zmqctx, args.router,
-                               loglvl=self.loglvl, assertive=True)
-        worker.run()
+        runnable = self.runnable(self.zmqctx, args.router,
+                                 loglvl=self.loglvl, assertive=True)
+        runnable.run()
