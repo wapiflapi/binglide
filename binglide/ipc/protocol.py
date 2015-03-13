@@ -34,10 +34,7 @@ class Peer(messaging.Node):
                          *args, **kwargs)
 
     def encode_payload(self, payload):
-        # FIXME: attrdict is not JSON encodable.
-        # The dict() fix bellow is not good because it won't
-        # work for nested dicts. We need a better solution.
-        return bytes(json.dumps(dict(payload)), 'utf8')
+        return bytes(json.dumps(payload, default=dict), 'utf8')
 
     def decode_payload(self, payload):
         return json.loads(str(payload, 'utf8'),
