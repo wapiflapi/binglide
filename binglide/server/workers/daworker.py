@@ -1,6 +1,8 @@
 import importlib
 
-from binglide.ipc import bodyfmt, utils
+import numpy
+
+from binglide.ipc import protocol, utils
 from binglide.data import Accessor
 from binglide.server.workers import CachedReporter
 
@@ -21,11 +23,13 @@ class DAWorker(CachedReporter):
             body.options.offset, body.options.size,
             body.options.sample, body.options.margin)
 
-        response = bodyfmt.BodyFmt()
+        response = protocol.Payload()
         (response.offset, response.size,
          response.sample, response.margin) = meta
 
-        yield response, data
+        response.attachments = [numpy.frombuffer(data, "u1")]
+
+        yield response
 
 
 class import_object(object):

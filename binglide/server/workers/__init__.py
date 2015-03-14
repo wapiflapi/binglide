@@ -1,5 +1,5 @@
 from binglide import logging
-from binglide.ipc import protocol, bodyfmt
+from binglide.ipc import protocol
 
 
 class InputAware(object):
@@ -10,13 +10,13 @@ class InputAware(object):
 
 class ReportAware(object):
 
-    def report(self, request, meta, body, data=None):
-        super().report(meta, body, data)
+    def report(self, request, meta, body):
+        super().report(meta, body)
 
 
 class CacheAware(object):
 
-    def commit(self, request, body, data=None):
+    def commit(self, request, body):
         pass
 
 
@@ -39,17 +39,12 @@ class CachedReporter(CacheAware, ReportAware, protocol.Worker):
                 # to process events. Thanks :-)
                 continue
 
-            try:
-                report, data = report
-            except:
-                data = None
+            if not isinstance(report, protocol.Payload):
+                raise TypeError("%s must generate Payload reports." %
+                                self.__class__.__name__)
 
-            if not isinstance(report, bodyfmt.BodyFmt):
-                raise TypeError("%s must generate BodyFmt reports.",
-                                self.name)
-
-            self.commit(body, report, data)
-            self.report(body, meta, report, data)
+            self.commit(body, report)
+            self.report(body, meta, report)
 
         return True
 

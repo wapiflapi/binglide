@@ -91,6 +91,10 @@ class Broker(messaging.Node):
 
     def match_worker(self, service):
 
+        if service not in self.services:
+            self.logger.warn("pending request for unknown service %s" %
+                             service)
+
         if service not in self.idleworkers:
             return
 

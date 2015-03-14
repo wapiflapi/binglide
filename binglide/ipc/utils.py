@@ -17,7 +17,7 @@ class Main(object):
         self.loglvl = None
 
         if isinstance(loginfo, str):
-            logging.basicConfig(level=loginfo)
+                logging.getLogger('').setLevel(loginfo)
         elif isinstance(loginfo, dict):
             for logger, lvl in loginfo.items():
                 logging.getLogger(logger).setLevel(lvl)

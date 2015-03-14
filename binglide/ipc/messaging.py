@@ -67,6 +67,8 @@ class Node(dispatching.Dispatcher):
         while block or self.socket.get(zmq.EVENTS) & zmq.POLLIN:
 
             block = False  # only block once.
+
+            # TODO: Should we support non-copy recv?
             msg = self.socket.recv_multipart()
 
             self.logger.debug("received: %s" % msg)

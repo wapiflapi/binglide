@@ -29,6 +29,18 @@ class ClientDbg(protocol.Client):
         sys.stdout.write(prompt)
         sys.stdout.flush()
 
+    def print_header(self, title='', width=80, bar='='):
+        print((" %s " % title).center(width, bar))
+
+    def print_h1(self, title='', width=80):
+        self.print_header(title, width, '=')
+
+    def print_h2(self, title='', width=80):
+        self.print_header(title, width, '-')
+
+    def print_footer(self):
+        pass
+
     def on_stdin(self):
         cmd = sys.stdin.readline()
         if not cmd:
@@ -66,12 +78,22 @@ class ClientDbg(protocol.Client):
         except Exception as e:
             print("%s" % (traceback.format_exc(),), end="", file=sys.stderr)
 
-    def handle_report(self, service, reqid, body, data):
+    def handle_report(self, service, reqid, body):
+
+        attachments = body.get('attachments', [])
+        body.attachments = ...
+
         print()
-        print("got answer for %s, %r:" % (service, reqid))
+        self.print_h1("%r: Answer from %s" % (reqid, service))
+
         pprint.pprint(body)
-        if data is not None:
-            print("Attached data frame:\n%s" % data)
+
+        for i, attachment in enumerate(attachments):
+            self.print_h2("Attachment %d, %s %s" %
+                          (i, attachment.dtype, attachment.shape))
+            print("%s" % attachment)
+            self.print_footer()
+
         self.prompt()
 
     @dispatching.bind()
@@ -88,26 +110,20 @@ class ClientDbg(protocol.Client):
     def on_cmd_meta(self, parser, cmd):
         """Display information about the current setup."""
 
-        def header(title, width=80):
-            print((" %s " % title).center(width, '='))
-
-        def footer():
-            pass
-
-        header("client info")
+        self.print_h1("client info")
         print("socket    : %s" % self.config)
-        footer()
+        self.print_footer()
 
-        header("components versions")
+        self.print_h1("components versions")
         for lib, version in ipc.versions().items():
             print("%-10s: %6s" % (lib, version))
-        footer()
+        self.print_footer()
 
-        header("network capabilities")
+        self.print_h1("network capabilities")
         print("requesting service LIST...", end="\r")
         servicelist = self.list_sync()
         print("services  : %s" % ", ".join(servicelist), end="\033[K\n")
-        footer()
+        self.print_footer()
 
     @dispatching.bind()
     def on_cmd_req(self, parser, cmd):

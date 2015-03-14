@@ -2,9 +2,10 @@ import sys
 import json
 
 import zmq
+import numpy
+import attrdict
 
 from binglide.ipc import messaging
-from binglide.ipc import bodyfmt
 
 VERSION = b"BXMDP00"
 
@@ -27,6 +28,10 @@ READY = command(b"READY")
 DISCONNECT = command(b"DISCONNECT")
 
 
+class Payload(attrdict.AttrDict):
+    pass
+
+
 class Peer(messaging.Node):
 
     def __init__(self, zmqctx, keyidx, logger, *args, **kwargs):
@@ -34,11 +39,35 @@ class Peer(messaging.Node):
                          *args, **kwargs)
 
     def encode_payload(self, payload):
-        return bytes(json.dumps(payload, default=dict), 'utf8')
 
-    def decode_payload(self, payload):
-        return json.loads(str(payload, 'utf8'),
-                          object_hook=bodyfmt.BodyFmt)
+        data = []
+        for i, array in enumerate(payload.get('attachments', [])):
+            payload['attachments'][i] = {'dtype': str(array.dtype),
+                                         'shape': array.shape}
+            data.append(array)
+
+        frames = [bytes(json.dumps(payload, default=dict), 'utf8')] + data
+        return frames
+
+    def decode_payload(self, frames):
+
+        payload = json.loads(str(frames[0], 'utf8'), object_hook=Payload)
+
+        attachments = payload.get('attachments', [])
+
+        if len(attachments) != len(frames) - 1:
+            self.logger.warn("number of attachments (%d) does not match "
+                             "number of data frames (%d)." %
+                             (len(attachments), len(frames) - 1))
+
+        for i, (md, raw) in enumerate(zip(attachments, frames[1:])):
+            array = numpy.frombuffer(raw, dtype=md.dtype)
+            payload['attachments'][i] = array.reshape(md.shape)
+
+        return payload
+
+    def send(self, frames, **kwargs):
+        self.socket.send_multipart(frames, **kwargs)
 
 
 class Client(Peer):
@@ -51,36 +80,36 @@ class Client(Peer):
     def wait_for_reqid(self, reqid):
         return self.wait_for(lambda m: m[2] == reqid)
 
-    def request(self, service, body):
+    def request(self, service, payload, **kwargs):
 
         self.reqid = self.reqid + 1
 
         service = bytes(service, 'utf8')
         reqid = bytes("%d" % self.reqid, 'utf8')
-        body = self.encode_payload(body)
+        frames = self.encode_payload(payload)
 
-        msg = [REQUEST, service, reqid, b'', body]
-        self.socket.send_multipart(msg)
+        msg = [REQUEST, service, reqid, b''] + frames
+        self.send(msg, **kwargs)
 
         return reqid
 
-    def request_sync(self, service, body):
+    def request_sync(self, service, payload):
         # FIXME: This needs a timeout because there is no garantee the network
         # will answer. Also there might be more than one answer, in that case
         # the user can continue to monitor reqid.
 
-        thisreqid = self.request(service, body)
+        thisreqid = self.request(service, payload)
         key, msg = self.wait_for_reqid(thisreqid)
-        service, reqid, body, data = self.parse_report(msg)
-        return reqid, body, data
+        service, reqid, payload = self.parse_report(msg)
+        return reqid, payload
 
-    def cancel(self, reqid, body=None):
-        body = self.encode_payload({} if body is None else body)
-        msg = [CANCEL, b'', reqid, b'', body]
-        self.socket.send_multipart(msg)
+    def cancel(self, reqid, payload=None, **kwargs):
+        frames = self.encode_payload({} if payload is None else payload)
+        msg = [CANCEL, b'', reqid, b''] + frames
+        self.send(msg, **kwargs)
 
     def list(self):
-        self.socket.send_multipart([LIST])
+        self.send([LIST])
 
     def list_sync(self):
         self.list()
@@ -88,14 +117,14 @@ class Client(Peer):
         return [str(service, 'utf8') for service in msg[1:]]
 
     def parse_report(self, msg):
-        # service, reqid, body, [data]
-        data = None if len(msg) < 6 else msg[5]
-        return str(msg[1], 'utf8'), msg[2], self.decode_payload(msg[4]), data
+        # service, reqid, payload
+        payload = self.decode_payload(msg[4:])
+        return str(msg[1], 'utf8'), msg[2], payload
 
     @messaging.bind(REPORT)
     def on_report(self, msg):
-        service, reqid, body, data = self.parse_report(msg)
-        self.handle_report(service, reqid, body, data)
+        service, reqid, payload = self.parse_report(msg)
+        self.handle_report(service, reqid, payload)
 
 
 class Worker(Client):
@@ -119,19 +148,17 @@ class Worker(Client):
 
     def ready(self):
         msg = [READY, self.get_service()]
-        self.socket.send_multipart(msg)
+        self.send(msg)
 
     def get_ukey(self, meta):
         retaddr, reqid, clientid = meta
         return (reqid, clientid)
 
-    def report(self, meta, body, data=None):
+    def report(self, meta, payload, **kwargs):
         retaddr, reqid, clientid = meta
-        body = self.encode_payload(body)
-        msg = [XREPORT, retaddr, reqid, clientid, body]
-        if data is not None:
-            msg.append(data)
-        self.socket.send_multipart(msg)
+        frames = self.encode_payload(payload)
+        msg = [XREPORT, retaddr, reqid, clientid] + frames
+        self.send(msg, **kwargs)
 
     def check_canceled(self, meta):
 
@@ -140,21 +167,21 @@ class Worker(Client):
         ukey = self.get_ukey(meta)
         return self.canceledjobs.pop(ukey, None)
 
-    def handle_xcancel(self, meta, body):
-        self.canceledjobs[self.get_ukey(meta)] = body
+    def handle_xcancel(self, meta, payload):
+        self.canceledjobs[self.get_ukey(meta)] = payload
 
     @messaging.bind(XREQUEST)
     def on_xrequest(self, msg):
-        _, retaddr, reqid, clientid, body = msg
-        body = self.decode_payload(body)
-        if self.handle_xrequest((retaddr, reqid, clientid), body):
+        _, retaddr, reqid, clientid, *payload = msg
+        payload = self.decode_payload(payload)
+        if self.handle_xrequest((retaddr, reqid, clientid), payload):
             self.ready()
 
     @messaging.bind(XCANCEL)
     def on_xcancel(self, msg):
-        _, retaddr, reqid, clientid, body = msg
-        body = self.decode_payload(body)
-        if self.handle_xcancel((retaddr, reqid, clientid), body):
+        _, retaddr, reqid, clientid, *payload = msg
+        payload = self.decode_payload(payload)
+        if self.handle_xcancel((retaddr, reqid, clientid), payload):
             self.ready()
 
     @messaging.bind(DISCONNECT)
