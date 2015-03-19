@@ -7,7 +7,7 @@ class SampleWorker(protocol.Worker):
 
     servicename = "sample_worker"
 
-    def handle_xrequest(self, meta, body):
+    def receive_xrequest(self, meta, body):
 
         # Dummy task, lets send several reports.
         for status in range(3):

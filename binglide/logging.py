@@ -11,7 +11,7 @@ def getLogger(logger):
     return logging.getLogger(logger)
 
 
-class logexcept(object):
+class logexcept():
 
     def __init__(self, *args, **kwargs):
         self.exceptions = tuple(args) or Exception

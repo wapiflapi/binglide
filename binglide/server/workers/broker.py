@@ -13,7 +13,7 @@ class KeyDefaultDict(collections.defaultdict):
         return self.setdefault(key, self.default_factory(key))
 
 
-class RoundRobin(object):
+class RoundRobin():
 
     def __init__(self):
 

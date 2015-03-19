@@ -1,5 +1,5 @@
 
-class bind(object):
+class bind():
 
     def __init__(self, *args):
         self.keys = args
@@ -15,7 +15,7 @@ class bind(object):
         return f
 
 
-class Dispatcher(object):
+class Dispatcher():
 
     bind = bind
 

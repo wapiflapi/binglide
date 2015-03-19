@@ -2,6 +2,8 @@
 Backend infrastructure for binglide computations.
 """
 
+from pprint import pprint
+
 import circus
 
 import binglide.config
@@ -19,7 +21,7 @@ def run(config):
 
 def start(configfile=None):
     config = binglide.config.load_config(configfile)
-    print(config)
+    pprint(config)
     run(config)
 
 

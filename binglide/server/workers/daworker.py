@@ -4,10 +4,10 @@ import numpy
 
 from binglide.ipc import protocol, utils
 from binglide.data import Accessor
-from binglide.server.workers import CachedReporter
+from binglide.server.workers import CachingReporter
 
 
-class DAWorker(CachedReporter):
+class DAWorker(CachingReporter):
 
     def __init__(self, accessor, *args, **kwargs):
         self.accessor = accessor
@@ -19,20 +19,20 @@ class DAWorker(CachedReporter):
 
     def gen_reports(self, body):
 
-        *meta, data = self.accessor.get_data(
-            body.options.offset, body.options.size,
+        offset, size, data = self.accessor.get_data(
+            body.options.offset[0], body.options.size[0],
             body.options.sample, body.options.margin)
 
         response = protocol.Payload()
-        (response.offset, response.size,
-         response.sample, response.margin) = meta
+        response.offset = (offset,)
+        response.size = (size,)
 
         response.attachments = [numpy.frombuffer(data, "u1")]
 
         yield response
 
 
-class import_object(object):
+class import_object():
 
     def __init__(self, abc=None):
         self.abc = abc

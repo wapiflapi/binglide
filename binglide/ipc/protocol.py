@@ -124,7 +124,7 @@ class Client(Peer):
     @messaging.bind(REPORT)
     def on_report(self, msg):
         service, reqid, payload = self.parse_report(msg)
-        self.handle_report(service, reqid, payload)
+        self.receive_report(service, reqid, payload)
 
 
 class Worker(Client):
@@ -167,21 +167,21 @@ class Worker(Client):
         ukey = self.get_ukey(meta)
         return self.canceledjobs.pop(ukey, None)
 
-    def handle_xcancel(self, meta, payload):
+    def receive_xcancel(self, meta, payload):
         self.canceledjobs[self.get_ukey(meta)] = payload
 
     @messaging.bind(XREQUEST)
     def on_xrequest(self, msg):
         _, retaddr, reqid, clientid, *payload = msg
         payload = self.decode_payload(payload)
-        if self.handle_xrequest((retaddr, reqid, clientid), payload):
+        if self.receive_xrequest((retaddr, reqid, clientid), payload):
             self.ready()
 
     @messaging.bind(XCANCEL)
     def on_xcancel(self, msg):
         _, retaddr, reqid, clientid, *payload = msg
         payload = self.decode_payload(payload)
-        if self.handle_xcancel((retaddr, reqid, clientid), payload):
+        if self.receive_xcancel((retaddr, reqid, clientid), payload):
             self.ready()
 
     @messaging.bind(DISCONNECT)

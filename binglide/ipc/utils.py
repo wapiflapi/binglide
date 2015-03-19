@@ -8,7 +8,7 @@ from binglide import logging
 from binglide.ipc.messaging import BindSocket, ConnectSocket  # NOQA
 
 
-class Main(object):
+class Main():
 
     def __init__(self):
 

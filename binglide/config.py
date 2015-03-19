@@ -5,9 +5,17 @@ import appdirs
 import yaml
 
 
+appname = "binglide"
+
+
+def get_default_cache_dir():
+    a = appdirs.AppDirs(appname)
+    return a.user_cache_dir
+
+
 def get_default_config(filename="config.yaml", mode="r"):
 
-    a = appdirs.AppDirs("binglide")
+    a = appdirs.AppDirs(appname)
     for loc in (a.user_config_dir, a.site_config_dir):
         try:
             filepath = os.path.join(a.user_config_dir, filename)

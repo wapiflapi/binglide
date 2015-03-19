@@ -78,7 +78,7 @@ class ClientDbg(protocol.Client):
         except Exception as e:
             print("%s" % (traceback.format_exc(),), end="", file=sys.stderr)
 
-    def handle_report(self, service, reqid, body):
+    def receive_report(self, service, reqid, body):
 
         attachments = body.get('attachments', [])
         body.attachments = ...
