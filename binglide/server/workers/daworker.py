@@ -1,5 +1,7 @@
+import argparse
 import importlib
 
+import yaml
 import numpy
 
 from binglide.ipc import protocol, utils
@@ -38,8 +40,11 @@ class import_object():
         self.abc = abc
 
     def __call__(self, name):
-        modulename, objname = name.rsplit('.', 1)
-        obj = getattr(importlib.import_module(modulename), objname)
+        modname, objname = name.rsplit('.', 1)
+        try:
+            obj = getattr(importlib.import_module(modname), objname)
+        except:
+            raise ValueError("Can't import %r from %r." % (objname, modname))
         if self.abc is not None and not issubclass(obj, self.abc):
             raise TypeError("Not an instance of %r." % self.abc)
         return obj
@@ -47,17 +52,37 @@ class import_object():
 
 class Main(utils.Main):
 
+    def parse_accessor(self, opt):
+        try:
+            return import_object(abc=Accessor)(opt)
+        except Exception as e:
+            raise argparse.ArgumentTypeError(str(e))
+
+    def parse_opt(self, opt):
+        try:
+            return yaml.load(opt)
+        except:
+            raise argparse.ArgumentTypeError("Must be valid YAML")
+
+    def parse_kwopt(self, kwopt):
+        try:
+            kw, opt = kwopt.split('=', 1)
+        except:
+            raise argparse.ArgumentTypeError("Must be 'name=value'")
+        return kw, self.parse_opt(opt)
+
     def setup(self, parser):
         super().setup(parser)
-        parser.add_argument("accessor", type=import_object(abc=Accessor))
+        parser.add_argument("accessor", type=self.parse_accessor)
+        parser.add_argument("-O", "--kwopt", action='append',
+                            type=self.parse_kwopt, default=[])
+        parser.add_argument("-o", "--opt", action='append',
+                            type=self.parse_opt, default=[])
 
-    def run(self, args):
-
-        accessor = args.accessor()
-
-        runnable = DAWorker(accessor, self.zmqctx, args.router,
-                            loglvl=self.loglvl, assertive=True)
-        runnable.run()
+    def runnable(self, args):
+        accessor = args.accessor(*args.opt, **dict(args.kwopt))
+        return DAWorker(accessor, self.zmqctx, args.router,
+                        loglvl=self.loglvl, assertive=True)
 
 
 if __name__ == '__main__':
