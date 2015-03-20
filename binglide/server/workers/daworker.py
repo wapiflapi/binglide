@@ -2,10 +2,9 @@ import argparse
 import importlib
 
 import yaml
-import numpy
 
 from binglide.ipc import protocol, utils
-from binglide.data import Accessor
+from binglide.data.accessors import Accessor
 from binglide.server.workers import CachingReporter
 
 
@@ -22,14 +21,14 @@ class DAWorker(CachingReporter):
     def gen_reports(self, body):
 
         offset, size, data = self.accessor.get_data(
-            body.options.offset[0], body.options.size[0],
+            body.options.offset, body.options.size,
             body.options.sample, body.options.margin)
 
         response = protocol.Payload()
-        response.offset = (offset,)
-        response.size = (size,)
+        response.offset = offset
+        response.size = size
 
-        response.attachments = [numpy.frombuffer(data, "u1")]
+        response.attachments = [data]
 
         yield response
 
@@ -41,12 +40,9 @@ class import_object():
 
     def __call__(self, name):
         modname, objname = name.rsplit('.', 1)
-        try:
-            obj = getattr(importlib.import_module(modname), objname)
-        except:
-            raise ValueError("Can't import %r from %r." % (objname, modname))
+        obj = getattr(importlib.import_module(modname), objname)
         if self.abc is not None and not issubclass(obj, self.abc):
-            raise TypeError("Not an instance of %r." % self.abc)
+            raise TypeError("%r not a subclass of %r." % (obj, self.abc))
         return obj
 
 
@@ -55,7 +51,7 @@ class Main(utils.Main):
     def parse_accessor(self, opt):
         try:
             return import_object(abc=Accessor)(opt)
-        except Exception as e:
+        except (ImportError, AttributeError, TypeError) as e:
             raise argparse.ArgumentTypeError(str(e))
 
     def parse_opt(self, opt):
@@ -79,7 +75,7 @@ class Main(utils.Main):
         parser.add_argument("-o", "--opt", action='append',
                             type=self.parse_opt, default=[])
 
-    def runnable(self, args):
+    def get_runnable(self, args):
         accessor = args.accessor(*args.opt, **dict(args.kwopt))
         return DAWorker(accessor, self.zmqctx, args.router,
                         loglvl=self.loglvl, assertive=True)

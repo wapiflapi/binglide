@@ -33,13 +33,13 @@ class Main():
     def setup(self, parser):
         parser.add_argument("router", type=ConnectSocket)
 
-    def runnable(self, args):
+    def get_runnable(self, args):
         return self.runnable(self.zmqctx, args.router,
                              loglvl=self.loglvl, assertive=True)
 
     def run(self, args):
         try:
-            runnable = self.runnable(args)
+            runnable = self.get_runnable(args)
         except (ValueError, TypeError) as e:
             self.parser.error("%s" % e)
         except Exception as e:
