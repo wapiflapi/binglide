@@ -6,8 +6,8 @@ from binglide.data import accessors
 class Null(accessors.Accessor):
 
     @accessors.convertbytes
-    def get_data(self, offset, size, sample=1, margin=0.0):
-        return offset, 0, bytes(0)
+    def get_data(self, offset, size, sample):
+        return bytes(0)
 
     @property
     def uri(self):
@@ -17,8 +17,8 @@ class Null(accessors.Accessor):
 class Full(accessors.Accessor):
 
     @accessors.convertbytes
-    def get_data(self, offset, size, sample=1, margin=0.0):
-        return offset, size, bytes(size // sample)
+    def get_data(self, offset, size, sample):
+        return bytes(size // sample)
 
     @property
     def uri(self):
@@ -28,9 +28,8 @@ class Full(accessors.Accessor):
 class Random(accessors.Accessor):
 
     @accessors.convertbytes
-    def get_data(self, offset, size, sample=1, margin=0.0):
-        print("Random", self, offset, size, sample, size // sample)
-        return offset, size, os.urandom(size // sample)
+    def get_data(self, offset, size, sample):
+        return os.urandom(size // sample)
 
     @property
     def uri(self):
@@ -43,7 +42,7 @@ class StaticRandom(accessors.Accessor):
         self.seed = seed
 
     @accessors.convertbytes
-    def get_data(self, offset, size, sample=1, margin=0.0):
+    def get_data(self, offset, size, sample):
 
         def hash(x):
             x = x ^ self.seed
@@ -51,8 +50,7 @@ class StaticRandom(accessors.Accessor):
                 x = ((x >> 8) ^ x) * 0x6B + n
             return x & 0xFF
 
-        data = bytearray(hash(i) for i in range(offset, offset+size, sample))
-        return offset, size, data
+        return bytearray(hash(i) for i in range(offset, offset+size, sample))
 
     @property
     def uri(self):

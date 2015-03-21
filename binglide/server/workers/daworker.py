@@ -20,13 +20,15 @@ class DAWorker(CachingReporter):
 
     def gen_reports(self, body):
 
-        offset, size, data = self.accessor.get_data(
-            body.options.offset, body.options.size,
-            body.options.sample, body.options.margin)
+        offset = body.options.offset
+        size = body.options.size
+        sample = body.options.sample
+
+        data = self.accessor.get_data(offset, size, sample)
 
         response = protocol.Payload()
-        response.offset = offset
-        response.size = size
+        response.offset = body.options.offset
+        response.size = [w * s for w, s in zip(data.shape, sample)]
 
         response.attachments = [data]
 

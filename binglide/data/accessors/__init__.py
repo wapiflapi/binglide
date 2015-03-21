@@ -1,5 +1,4 @@
 import abc
-import math
 import functools
 
 import numpy
@@ -8,9 +7,9 @@ import numpy
 class Accessor(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def get_data(self, offset, size, sample=1, margin=0.0):
+    def get_data(self, offset, size, sample):
         # This is default value, its short read and indicates an error.
-        return offset, size, bytes(0)
+        return bytes(0)
 
     @property
     @abc.abstractmethod
@@ -18,62 +17,70 @@ class Accessor(metaclass=abc.ABCMeta):
         return ""
 
 
-def convertbytes(get_data):
-
-    @functools.wraps(get_data)
-    def wrapper(obj, offset, size, *args, **kwargs):
-
-        if len(offset) != 1 or len(size) != 1:
-            raise ValueError("offset or size is not unidimensional")
-
-        o, s, d = get_data(obj, offset[0], size[0], *args, **kwargs)
-        return [o], [s], numpy.frombuffer(d, "u1")
-
-    return wrapper
-
-
-class autosample1D():
+class autosample():
 
     def __init__(self, dtype):
         self.dtype = dtype
 
     def __call__(self, get_data):
+        """
+        Implements sampling as a decorator for get_data functions.
+
+        Only decimation is implemented and its not using any legit method. It
+        tries to preserve patterns from the original data sources. When
+        sampling [0, 1, 2, 3, 4, 5, 6, 7] with factor 2 we obtain [0, 1, 4, 5]
+        instead of the naive [0, 2, 4, 6]. The length consecutive bytes to copy
+        is computed as sqrt(size // sample) because that works well.
+        """
 
         @functools.wraps(get_data)
-        def wrapper(obj, offset, size, sample=1, margin=0.0):
+        def wrapper(obj, offset, size, sample):
 
-            if len(offset) != 1 or len(size) != 1:
-                raise ValueError("offset or size is not unidimensional")
+            offset = numpy.array(offset)
+            size = numpy.array(size)
+            sample = numpy.array(sample)
 
-            # Not sure what how this should work if < 0.
-            assert sample >= 1
+            if (sample < 1).any():
+                # We only handle decimination at the moment.
+                raise NotImplementedError("interpolation not implemented")
 
-            if sample == 1:
-                data = get_data(obj, offset[0], size[0])
-                return offset, [len(data)], data
+            if sample.max() == 1:
+                return get_data(obj, offset, size)
 
-            outsz = size[0] // sample
+            outsz = size // sample
             out = numpy.empty(outsz, dtype=self.dtype)
 
             # This looks good. Nothing scientific about it though.
-            blksz = math.floor(math.sqrt(size[0] // sample))
+            fillsz = numpy.floor(numpy.sqrt(size // sample))
+            jumpsz = fillsz * sample
 
-            done = 0
+            maxread = size  # don't read beyond this
+            gotread = numpy.zeros(size.shape)  # this is done
 
-            for off in range(0, outsz, blksz):
+            for blkidx in numpy.ndindex(size // jumpsz):
 
-                maxlen = min(blksz, outsz - off)
-                data = get_data(obj, offset[0] + off * sample, maxlen)
+                dstoff = blkidx * fillsz
 
-                new = len(data)
+                srcoff = offset + blkidx * jumpsz
+                srcsz = numpy.fmin(fillsz, out.shape - dstoff)
 
-                out[off:off+new] = data
-                done += new
+                # Did we have a short read on all axis before this?
+                if (srcoff >= maxread).all():
+                    continue
 
-                if new < maxlen:
-                    break
+                data = get_data(obj, srcoff, srcsz)
 
-            return offset, [done], out[:done]
+                # update the point until which we have data
+                gotread = numpy.fmax(gotread, srcoff + data.shape)
+
+                # check for any new short reads.
+                maxread = numpy.where(data.shape < srcsz,
+                                      srcoff + data.shape, maxread)
+
+                # WTF is there no easier way of doing this. I must be blind.
+                out[tuple(map(slice, dstoff, dstoff + data.shape))] = data
+
+            return out[tuple(slice(s) for s in gotread)]
 
         return wrapper
 
@@ -85,4 +92,14 @@ def autosamplebytes(get_data):
         data = get_data(obj, offset[0], size[0])
         return numpy.frombuffer(data, "u1")
 
-    return autosample1D(dtype="u1")(wrapper)
+    return autosample(dtype="u1")(wrapper)
+
+
+def convertbytes(get_data):
+
+    @functools.wraps(get_data)
+    def wrapper(obj, offset, size, sample):
+        data = get_data(obj, offset[0], size[0], sample[0])
+        return numpy.frombuffer(data, "u1")
+
+    return wrapper

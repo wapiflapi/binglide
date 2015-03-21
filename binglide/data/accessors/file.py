@@ -21,7 +21,7 @@ class MMappedFile(File):
         super().__init__(path)
         self.array = numpy.memmap(path, dtype=numpy.uint8, mode='r')
 
-    @accessors.autosample1D(numpy.uint8)
+    @accessors.autosample(numpy.uint8)
     def get_data(self, offset, size):
         return self.array[offset:offset+size]
 
