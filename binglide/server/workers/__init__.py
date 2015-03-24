@@ -84,6 +84,14 @@ class CacheAwareMixin():
 
         self.cache.commit(key, offset, size, *response.attachments)
 
+    # sutff like this
+
+    def list(self, request):
+        pass
+
+    def makemesmart(self, request):
+        pass
+
 
 class CachingWorker(CacheAwareMixin, protocol.Worker):
 

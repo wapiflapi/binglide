@@ -2,19 +2,27 @@
 server:
 
   - name: bg_broker
-    cmd : python3 -um binglide.server.workers.broker --
+    cmd : python3 -um binglide.server.workers.broker
     args: [&BROKERADDR 'tcp://127.0.0.1:18422']
     copy_env: true
 
-  - name: bg_sample_worker
-    cmd : python3 -um binglide.server.workers.sample_worker --
-    args: [*BROKERADDR]
-    copy_env: true
-    numprocesses: 3
+  # Let's have some default datasources to do tests with during dev.
 
   - name: bg_daw_random
-    cmd : python3 -um binglide.server.workers.daworker --
-    args: [*BROKERADDR, binglide.data.accessors.defaults.Random]
+    cmd : python3 -um binglide.server.workers.daworker
+    args: [*BROKERADDR, binglide.data.accessors.defaults.StaticRandom]
     copy_env: true
     numprocesses: 1
+
+  - name: bg_daw_smod
+    cmd : python3 -um binglide.server.workers.daworker
+    args: [*BROKERADDR, binglide.data.accessors.defaults.SampledModulus]
+    copy_env: true
+    numprocesses: 1
+
+  - name: b_gdaw_passwd
+    cmd : python3 -um binglide.server.workers.daworker -O path=/etc/passwd
+    args: [*BROKERADDR, binglide.data.accessors.file.MMappedFile]
+    copy_env: true
+    numprocesses: 3
 

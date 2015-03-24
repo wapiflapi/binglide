@@ -3,6 +3,7 @@ import importlib
 
 import yaml
 
+from binglide import logging
 from binglide.ipc import protocol, utils
 from binglide.data.accessors import Accessor
 from binglide.server.workers import CachingReporter
@@ -42,9 +43,24 @@ class import_object():
 
     def __call__(self, name):
         modname, objname = name.rsplit('.', 1)
-        obj = getattr(importlib.import_module(modname), objname)
+
+        try:
+            mod = importlib.import_module(modname)
+        except ImportError as e:
+            # Not sure how else we can get the name of the object that failed.
+            if modname not in e.msg:
+                raise
+            raise argparse.ArgumentTypeError(str(e))
+
+        try:
+            obj = getattr(mod, objname)
+        except AttributeError as e:
+            raise argparse.ArgumentTypeError(str(e))
+
         if self.abc is not None and not issubclass(obj, self.abc):
-            raise TypeError("%r not a subclass of %r." % (obj, self.abc))
+            raise argparse.ArgumentTypeError(
+                "%r not a subclass of %r." % (obj, self.abc))
+
         return obj
 
 
@@ -53,8 +69,11 @@ class Main(utils.Main):
     def parse_accessor(self, opt):
         try:
             return import_object(abc=Accessor)(opt)
-        except (ImportError, AttributeError, TypeError) as e:
-            raise argparse.ArgumentTypeError(str(e))
+        except argparse.ArgumentTypeError:
+            raise
+        except Exception as e:  # NOQA
+            logging.log_exception(e)
+            self.parser.exit()
 
     def parse_opt(self, opt):
         try:

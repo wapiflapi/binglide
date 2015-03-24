@@ -42,7 +42,7 @@ class Main():
             runnable = self.get_runnable(args)
         except (ValueError, TypeError) as e:
             self.parser.error("%s" % e)
-        except Exception as e:
+        except Exception as e:  # NOQA
             self.parser.error("%s: %s" % (e.__class__.__name__, e))
 
         runnable.run()
