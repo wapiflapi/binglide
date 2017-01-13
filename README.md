@@ -1,6 +1,8 @@
 binglide
 =======
 
+#### I have recently contributed to [veles](https://github.com/wapiflapi/veles), a more mature version of this. You should probably check it out, it has a bunch more awesome.
+
 binglide is a visual reverse engineering tool. It is designed to offer a quick overview of the different data types that are present in a file. The screenshot bellow shows a small portion of the php5 binary that has a weird signature pattern:
 
 ![binglide looking at php5](http://i.imgur.com/O6HMfSn.png)
