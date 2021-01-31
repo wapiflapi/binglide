@@ -15,7 +15,7 @@ class ChannelMixer(object):
 
     def __call__(self, colored, data, coefs):
         for c in self.channels:
-            colored[..., c] += data * coefs[c]
+            colored[..., c] = colored[..., c] + (data * coefs[c])
 
 mix_greys = Renderer.register_mixer(None)(
     ChannelMixer(True, True, True))

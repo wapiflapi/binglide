@@ -315,7 +315,7 @@ class Renderer2D(pg.GraphicsLayoutWidget, Renderer):
     def do_render(self, projected):
         projected = self.rescale(projected)
 
-        self.img.setImage(projected, levels=None)
+        self.img.setImage(projected, levels=[10, 10])
 
         for _ in (1, 2): # No idea why but need to do this twice.
             self.view.setRange(xRange=(0, self.projected.shape[0]),

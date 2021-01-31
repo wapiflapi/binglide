@@ -35,7 +35,7 @@ def proj_scanline(dst, data, shape):
     rshape.append(4)
 
     data = data.reshape((size, 4))
-    data = np.pad(data, ((0, nsize - size), (0, 0)), 'constant')
+    data = np.pad(data, ((0, np.int32(nsize - size)), (0, 0)), 'constant')
     data = data.reshape(rshape, order='F')
 
     return data
